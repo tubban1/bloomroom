@@ -1,0 +1,227 @@
+[
+  {
+    "file": "garden-rose.glb",
+    "title": "Rose",
+    "author": "Heliona",
+    "authorUrl": "https://sketchfab.com/Heliona",
+    "source": "https://sketchfab.com/3d-models/rose-6281bf3703584323bb4d8326f1f1b59d",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "Flower head extracted and normalized; textures resized to at most 1024px; unused geometry and textures removed."
+  },
+  {
+    "file": "tulip.glb",
+    "title": "Tulip Flower",
+    "author": "Ra_in_coat",
+    "authorUrl": "https://sketchfab.com/ra_in_coat",
+    "source": "https://sketchfab.com/3d-models/tulip-flower-8b865189c6ca4013a39cb25076241494",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "Flower head extracted, axes and scale normalized; unused meshes and textures removed."
+  },
+  {
+    "file": "daisy.glb",
+    "title": "Daisy models pack (realistic, optimized)",
+    "author": "LOLIPOP",
+    "authorUrl": "https://sketchfab.com/lolipop_1707",
+    "source": "https://sketchfab.com/3d-models/daisy-models-pack-realistic-optimized-0748471f99f2416a8b66b522c293720f",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "Flower head extracted, axes and scale normalized; unused meshes and textures removed."
+  },
+  {
+    "file": "poppy.glb",
+    "title": "Poppy Flower",
+    "author": "Luna",
+    "authorUrl": "https://sketchfab.com/abluna",
+    "source": "https://sketchfab.com/3d-models/poppy-flower-380d82c4a1a84a77abff5c978ec2fada",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "Scale and orientation adjusted for Bloomroom."
+  },
+  {
+    "file": "gerbera.glb",
+    "title": "Gerbera Daisies",
+    "author": "Tom",
+    "authorUrl": "https://sketchfab.com/trbaker",
+    "source": "https://sketchfab.com/3d-models/gerbera-daisies-b4f61f6c4e764e18aa641da251624e96",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "Complete flower stem retained; textures resized to at most 1024px; axes, scale, and materials normalized at runtime."
+  },
+  {
+    "file": "chrysanthemum.glb",
+    "title": "Chrysanthemum",
+    "author": "Korea Heritage Service",
+    "authorUrl": "https://sketchfab.com/KHS_Asset",
+    "source": "https://sketchfab.com/3d-models/chrysanthemum-dbd44831caae4625834665c86e63af25",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "Complete flower stem retained; textures resized to at most 1024px; axes, scale, and materials normalized at runtime."
+  },
+  {
+    "file": "lily-of-the-valley.glb",
+    "title": "Lily of the Valley",
+    "author": "SBonser",
+    "authorUrl": "https://sketchfab.com/sbonser",
+    "source": "https://sketchfab.com/3d-models/lily-of-the-valley-7386d332890e4b948b2da4fe573ed98d",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "Complete flower stem retained; textures resized to at most 1024px; axes, scale, and materials normalized at runtime."
+  },
+  {
+    "file": "fern.glb",
+    "title": "3D Fern – 01",
+    "author": "SanForge Studio",
+    "authorUrl": "https://sketchfab.com/SanForge",
+    "source": "https://sketchfab.com/3d-models/3d-fern-01-165f3870237f488885faf406d9deddc0",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "Complete fern stem retained; textures resized to at most 1024px; axes, scale, and materials normalized at runtime."
+  },
+  {
+    "file": "peony.glb",
+    "title": "Peony",
+    "author": "Terrie Simmons-Ehrhardt",
+    "authorUrl": "https://sketchfab.com/terrielsimmons",
+    "source": "https://sketchfab.com/3d-models/peony-4a90c5fa3d824d1d87cd63bbae14ca59",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "Photogrammetry flower retained; textures resized to at most 1024px, materials converted to PBR, and scale normalized for the arrangement."
+  },
+  {
+    "file": "hydrangea.glb",
+    "title": "Hydrangea_blue_20220615 紫陽花（青）",
+    "author": "Akiko_NAKAMURA",
+    "authorUrl": "https://sketchfab.com/Akiko_NAKAMUR",
+    "source": "https://sketchfab.com/3d-models/hydrangea-blue-20220615-69fd19ab6fe545999fa1e71bea910288",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "Photogrammetry bloom retained; textures resized to at most 1024px, materials converted to PBR, and scale normalized for the arrangement."
+  },
+  {
+    "file": "eucalyptus.glb",
+    "title": "Eucalyptus",
+    "author": "newmag2207",
+    "authorUrl": "https://sketchfab.com/newmag2207",
+    "source": "https://sketchfab.com/3d-models/eucalyptus-ed7b963343244f2daa7916ac37c05b21",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "One eucalyptus branch extracted from a multi-branch scene; textures resized to at most 1024px, materials converted to PBR, and scale normalized."
+  },
+  {
+    "file": "eucalyptus-sprig.glb",
+    "title": "Eucalyptus",
+    "author": "newmag2207",
+    "authorUrl": "https://sketchfab.com/newmag2207",
+    "source": "https://sketchfab.com/3d-models/eucalyptus-ed7b963343244f2daa7916ac37c05b21",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "A second eucalyptus branch extracted from a multi-branch scene; textures resized to at most 1024px, materials converted to PBR, and scale normalized."
+  },
+  {
+    "file": "sunflower.glb",
+    "title": "Sunflower",
+    "author": "Polygonal Miniatures",
+    "authorUrl": "https://sketchfab.com/PolygonalMindstudio",
+    "source": "https://sketchfab.com/3d-models/569a71ccf4d94c1585c9573521fb998f",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "Complete flower stem retained; textures resized to at most 1024px; materials normalized at runtime."
+  },
+  {
+    "file": "orchid.glb",
+    "title": "Orchid",
+    "author": "Rigsters",
+    "authorUrl": "https://sketchfab.com/Rigsters",
+    "source": "https://sketchfab.com/3d-models/ed453cd6b12f4dfa8d4f3dcf68c97cf1",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "Photogrammetry orchid stem retained; textures resized to at most 1024px; materials converted to PBR and normalized."
+  },
+  {
+    "file": "calla-lily.glb",
+    "title": "Kála – Calla Lily (Zantedeschia)",
+    "author": "TIS",
+    "authorUrl": "https://sketchfab.com/TIS",
+    "source": "https://sketchfab.com/3d-models/92008b5d9d0c4643bf7de2c5374a8cb3",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "Complete calla lily stem retained; textures resized to at most 1024px; materials normalized at runtime."
+  },
+  {
+    "file": "carnation.glb",
+    "title": "Single flower / Carnation",
+    "author": "GardenBee",
+    "authorUrl": "https://sketchfab.com/pocketpastel456",
+    "source": "https://sketchfab.com/3d-models/1f051fc353e746869844ca45412c850b",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "Flower stem extracted and normalized; textures resized to at most 1024px; materials normalized at runtime."
+  },
+  {
+    "file": "lily.glb",
+    "title": "Lilium",
+    "author": "TahirNilin",
+    "authorUrl": "https://sketchfab.com/TahirNilin",
+    "source": "https://sketchfab.com/3d-models/cc518ec481154c51b1effbc67dd685ff",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "Complete lily stem retained; textures resized to at most 1024px; materials normalized at runtime."
+  },
+  {
+    "file": "lotus.glb",
+    "title": "CC0 Indian Lotus (Nelumbo nucifera)",
+    "author": "ffish.asia / floraZia.com",
+    "authorUrl": "https://sketchfab.com/ffishAsia-and-floraZia",
+    "source": "https://sketchfab.com/3d-models/d69e1be5895f40e484f0db472a721c2f",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "changes": "Photogrammetry lotus flower retained; textures resized to at most 1024px; materials converted to PBR."
+  },
+  {
+    "file": "anemone.glb",
+    "title": "Anemone hybrida 'Honorine Jobert'",
+    "author": "Livin Vision",
+    "authorUrl": "https://sketchfab.com/LivinVision",
+    "source": "https://sketchfab.com/3d-models/d40b58e0af514977aa52b839659dc1d3",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "Complete anemone stem retained; textures resized to at most 1024px; materials normalized at runtime."
+  },
+  {
+    "file": "chamomile.glb",
+    "title": "Chamomile",
+    "author": "Cosmic_dust",
+    "authorUrl": "https://sketchfab.com/Cosmic_dust",
+    "source": "https://sketchfab.com/3d-models/31df46bbac484e3aa549032d8f321b6d",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "Complete chamomile stem retained; textures resized to at most 1024px; materials normalized at runtime."
+  },
+  {
+    "file": "delphinium.glb",
+    "title": "White Delphinium / Witte Delphinium",
+    "author": "Marco van Ammers – Tazama",
+    "authorUrl": "https://sketchfab.com/tazama",
+    "source": "https://sketchfab.com/3d-models/221602f5ae55471990f669d480217626",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "Complete delphinium spike retained; textures resized to at most 1024px; materials normalized at runtime."
+  },
+  {
+    "file": "snowdrop.glb",
+    "title": "Snowdrop pack (lowpoly, gameready, LOD)",
+    "author": "LOLIPOP",
+    "authorUrl": "https://sketchfab.com/lolipop_1707",
+    "source": "https://sketchfab.com/3d-models/14890248c9374b569a7bc0d497ccdbe0",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "One snowdrop stem extracted; scale normalized for Bloomroom arrangement."
+  },
+  {
+    "file": "lavender.glb",
+    "title": "Lavender vase",
+    "author": "Moons",
+    "authorUrl": "https://sketchfab.com/Moons",
+    "source": "https://sketchfab.com/3d-models/7c92205759f24f8fb0a0974d192e2c74",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "Lavender stems extracted from vase scene; textures resized to at most 1024px; materials normalized."
+  },
+  {
+    "file": "ivy.glb",
+    "title": "Ivy pack (12 variations, lowpoly, LODs)",
+    "author": "LOLIPOP",
+    "authorUrl": "https://sketchfab.com/lolipop_1707",
+    "source": "https://sketchfab.com/3d-models/0c80d67aa8fb4688bd1187518e4cc686",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "One trailing ivy vine extracted; scale normalized for Bloomroom arrangement."
+  },
+  {
+    "file": "monstera.glb",
+    "title": "Monstera Deliciosa Leaf",
+    "author": "Shift4cube",
+    "authorUrl": "https://sketchfab.com/Shift4cube",
+    "source": "https://sketchfab.com/3d-models/321f1c05b802494196096e462a6c4e72",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "changes": "Single monstera leaf with stem retained; textures resized to at most 1024px; materials normalized."
+  }
+]

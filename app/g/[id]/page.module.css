@@ -1,0 +1,86 @@
+.page {
+  min-height: 100svh;
+  padding: 26px 24px 70px;
+  background: #e9e5db;
+  color: #22231f;
+}
+
+.header {
+  max-width: 1120px;
+  margin: 0 auto 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 10px;
+  letter-spacing: .17em;
+  text-transform: uppercase;
+  color: #77766e;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #22231f;
+  text-decoration: none;
+  font-family: Georgia, serif;
+  font-size: 20px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.brand::first-letter { font-size: 30px; }
+.brand span { font-size: 16px; }
+
+.postcard {
+  width: min(880px, 100%);
+  margin: 0 auto;
+  padding: 18px 18px 0;
+  background: #f9f7f0;
+  box-shadow: 0 22px 65px rgba(56, 52, 39, .18), 0 1px 3px rgba(56, 52, 39, .12);
+  transform: rotate(-.35deg);
+}
+
+.photo {
+  height: min(55vw, 560px);
+  min-height: 320px;
+  overflow: hidden;
+  background: #e6e1d6;
+}
+
+.photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.message {
+  min-height: 225px;
+  padding: 27px 30px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.kicker {
+  margin: 0 0 22px;
+  color: #8d8a80;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .2em;
+}
+
+.to, .from { margin: 0; font-size: 13px; letter-spacing: .02em; }
+.from { margin-top: auto; align-self: flex-end; padding-top: 18px; }
+.note { max-width: 720px; margin: 9px 0 15px; font-family: Georgia, serif; font-size: clamp(19px, 3vw, 30px); line-height: 1.35; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px 28px; margin: 38px auto 0; font-size: 12px; }
+.actions a { color: #363d34; text-underline-offset: 5px; }
+.actions span { margin-left: 4px; }
+
+@media (max-width: 600px) {
+  .page { padding: 18px 14px 42px; }
+  .header { margin-bottom: 30px; }
+  .header > span { font-size: 8px; }
+  .postcard { padding: 10px 10px 0; }
+  .photo { min-height: 260px; height: 65vw; }
+  .message { min-height: 210px; padding: 21px 18px 26px; }
+  .actions { flex-direction: column; align-items: center; margin-top: 28px; }
+}

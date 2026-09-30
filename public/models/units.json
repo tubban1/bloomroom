@@ -1,0 +1,277 @@
+{
+  "anemone": {
+    "mode": "head",
+    "height": 0.18271148568901288,
+    "width": 0.31537931425441373,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "calla-lily": {
+    "mode": "stem",
+    "height": 1.0,
+    "width": 0.3472508676682833,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "carnation": {
+    "mode": "stem",
+    "height": 0.9999999999999999,
+    "width": 0.3469794978435937,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "chamomile": {
+    "mode": "head",
+    "height": 0.0975060524087933,
+    "width": 0.14285714285714285,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "chrysanthemum": {
+    "mode": "stem",
+    "height": 1.0,
+    "width": 0.5120381778482153,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "daisy": {
+    "mode": "head",
+    "height": 0.2810814191634262,
+    "width": 0.2857142857142857,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "delphinium": {
+    "mode": "stem",
+    "height": 0.9999999999999999,
+    "width": 0.46586402562526685,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "eucalyptus-sprig": {
+    "mode": "stem",
+    "height": 1.0,
+    "width": 1.1700163586759902,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "eucalyptus": {
+    "mode": "stem",
+    "height": 1.0,
+    "width": 0.6578454893087401,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "fern": {
+    "mode": "stem",
+    "height": 1.0,
+    "width": 0.35024102331570184,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "garden-rose": {
+    "mode": "head",
+    "height": 0.21671824012276358,
+    "width": 0.35714285714285715,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "gerbera": {
+    "mode": "head",
+    "height": 0.23985261919399212,
+    "width": 0.331893824534962,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "hydrangea": {
+    "mode": "head",
+    "height": 0.39768913652323046,
+    "width": 0.6428571428571429,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "ivy": {
+    "mode": "head",
+    "height": 0.2693627668541105,
+    "width": 0.32142857142857145,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "lavender": {
+    "mode": "stem",
+    "height": 1.0,
+    "width": 0.09646498383160412,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "lily-of-the-valley": {
+    "mode": "stem",
+    "height": 1.0,
+    "width": 0.5324855235635649,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "lily": {
+    "mode": "head",
+    "height": 0.4050407911911885,
+    "width": 0.4573432267946669,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "lotus": {
+    "mode": "stem",
+    "height": 1.0,
+    "width": 0.7025801171476673,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "monstera": {
+    "mode": "stem",
+    "height": 1.0,
+    "width": 0.42369295457940526,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "orchid": {
+    "mode": "head",
+    "height": 0.33014374058417023,
+    "width": 0.3571428571428571,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "peony": {
+    "mode": "head",
+    "height": 0.3037849862814711,
+    "width": 0.40342799897434833,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "poppy": {
+    "mode": "head",
+    "height": 0.20796974784231995,
+    "width": 0.35714285714285715,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "snowdrop": {
+    "mode": "stem",
+    "height": 1.0,
+    "width": 0.6488134420529692,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "sunflower": {
+    "mode": "head",
+    "height": 0.5998463634838979,
+    "width": 0.6428571428571428,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  },
+  "tulip": {
+    "mode": "head",
+    "height": 0.26818425592798323,
+    "width": 0.1542568408938928,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm"
+  }
+}
