@@ -33,6 +33,7 @@ import VoiceRecorder from "./VoiceRecorder";
 import AiReadingCard from "./AiReadingCard";
 import { computeBouquetFingerprint, type AiReading } from "@/lib/ai-reading";
 import { createCreationSync } from "@/lib/creation-sync";
+import { botanicalAnchor, firstBotanicalAnchor, resolveBotanicalAnchor, type BotanicalAnchor } from "@/lib/botanical-picking";
 import type { SafeUser } from "@/lib/auth";
 import {
   useEffectEvent,
@@ -45,7 +46,7 @@ import {
 import * as THREE from "three";
 import { minimumStemHeight } from "../lib/stem-geometry";
 import { createNaturalStemCurve, naturalStemRadius, stemAxisRotation, stemAxisTip } from "../lib/stem-shape";
-import { ImportedFlower, ImportedStem, IMPORTED_STEMS, flowerHeadHeight, flowerHeadWidth } from "./ImportedFlower";
+import { ImportedFlower, ImportedStem, IMPORTED_STEMS, flowerHeadHeight } from "./ImportedFlower";
 import { AmbientSoundPanel } from "./AmbientSound";
 import { LANGUAGES, backdropName, categoryName, colorName, flowerName, presetName, presetNote, t, vesselName, vesselNote, type Language } from "../lib/translations";
 
@@ -881,7 +882,9 @@ function FlowerStem({
 }) {
   const group = useRef<THREE.Group>(null);
   const importedVisual = useRef<THREE.Group>(null);
-  const importedSelectionRing = useRef<THREE.Mesh>(null);
+  const selectionRing = useRef<THREE.Mesh>(null);
+  const selectionAnchor = useRef<BotanicalAnchor | null>(null);
+  const selectionCache = useRef<{ geometry: THREE.BufferGeometry; point: THREE.Vector3 | null } | null>(null);
   const spec = getSpec(stem.kind);
   const colorOption = getFlowerColor(stem.kind, stem.colorVariant);
   const bloomColor = colorOption?.color ?? spec.color;
@@ -892,11 +895,9 @@ function FlowerStem({
   const displayHeight = stem.height;
   const visualScale = stemVisualScale(stem, wrapped);
   const headHeight = flowerHeadHeight(stem.kind) * visualScale;
-  const headSelectionRadius = Math.max(flowerHeadWidth(stem.kind), flowerHeadHeight(stem.kind)) * visualScale / 2 + 0.08;
   const stalkHeight = Math.max(0.1, displayHeight - headHeight);
   const lean = naturalLean(stem.kind, displayHeight, stem.leanX, stem.leanZ, visualScale);
   const stemLeanQuaternion = stemAxisRotation(displayHeight, lean.x, lean.z);
-  const importedTouchPoint = new THREE.Vector3(0, displayHeight * 0.82, 0).applyQuaternion(stemLeanQuaternion);
   const curve = useMemo(
     () => createNaturalStemCurve(stem.kind, stalkHeight, stem.seed),
     [stem.kind, stalkHeight, stem.seed],
@@ -907,7 +908,7 @@ function FlowerStem({
 
   const tip = useMemo(() => curve.getPoint(1), [curve]);
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock, camera }) => {
     if (!group.current || ghost) return;
     const t = clock.elapsedTime;
     const breeze = selected ? 0 : wind * 0.009;
@@ -915,19 +916,23 @@ function FlowerStem({
       Math.sin(t * 1.3 + stem.seed) * breeze;
     group.current.rotation.x =
       Math.cos(t * 0.95 + stem.seed * 1.7) * breeze * 0.5;
-    if (selected && importedVisual.current && importedSelectionRing.current) {
-      const bounds = new THREE.Box3().setFromObject(importedVisual.current);
-      if (!bounds.isEmpty()) {
-        const center = new THREE.Vector3(
-          (bounds.min.x + bounds.max.x) / 2,
-          bounds.max.y - Math.min((bounds.max.y - bounds.min.y) * 0.23, 0.5),
-          (bounds.min.z + bounds.max.z) / 2,
-        );
-        group.current.worldToLocal(center);
-        importedSelectionRing.current.position.copy(center);
-        importedSelectionRing.current.visible = true;
-      } else {
-        importedSelectionRing.current.visible = false;
+    if (selected && importedVisual.current && selectionRing.current) {
+      importedVisual.current.updateWorldMatrix(true, true);
+      selectionAnchor.current ??= firstBotanicalAnchor(importedVisual.current);
+      const anchor = selectionAnchor.current;
+      const mesh = anchor ? importedVisual.current.getObjectByName(anchor.meshName) : null;
+      let center: THREE.Vector3 | null = null;
+      if (anchor && mesh instanceof THREE.Mesh) {
+        if (selectionCache.current?.geometry !== mesh.geometry) {
+          selectionCache.current = { geometry: mesh.geometry, point: resolveBotanicalAnchor(mesh, anchor) };
+        }
+        center = selectionCache.current?.point?.clone().applyMatrix4(mesh.matrixWorld) ?? null;
+      }
+      selectionRing.current.visible = !!center;
+      if (center) {
+        selectionRing.current.position.copy(group.current.worldToLocal(center));
+        selectionRing.current.quaternion.copy(group.current.getWorldQuaternion(new THREE.Quaternion()).invert())
+          .multiply(camera.getWorldQuaternion(new THREE.Quaternion()));
       }
     }
   });
@@ -935,6 +940,9 @@ function FlowerStem({
   const pointerDown = (event: ThreeEvent<PointerEvent>) => {
     if (ghost || event.button !== 0) return;
     event.stopPropagation();
+    selectionAnchor.current = event.object instanceof THREE.Mesh && event.object.userData.botanicalPick && event.face
+      ? botanicalAnchor(event.object, event.point, event.face) : null;
+    selectionCache.current = null;
     onSelect?.(stem.id);
     onDragStart?.(stem.id, event);
   };
@@ -954,18 +962,11 @@ function FlowerStem({
       {IMPORTED_STEMS[spec.kind] ? (
         <>
           <group ref={importedVisual} quaternion={stemLeanQuaternion}>
-              <ImportedStem kind={spec.kind} ghost={ghost} height={displayHeight} visualScale={visualScale} bloomColor={importedTint} fallback={null} />
+              <ImportedStem kind={spec.kind} ghost={ghost} height={displayHeight} visualScale={visualScale} bloomColor={importedTint} fallback={null} leanX={spec.kind === "ivy" ? lean.x : 0} leanZ={spec.kind === "ivy" ? lean.z : 0} />
           </group>
-          {!ghost && <mesh position={importedTouchPoint}>
-            <sphereGeometry args={[clamp(displayHeight * 0.15, 0.24, 0.46), 10, 8]} />
-            <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
-          </mesh>}
-          {selected && !ghost && <mesh ref={importedSelectionRing} visible={false} raycast={() => null}>
-            <torusGeometry args={[clamp(displayHeight * visualScale * 0.16, 0.13, 0.4), 0.008, 6, 64]} /><meshBasicMaterial color="#85906d" transparent opacity={0.65} />
-          </mesh>}
         </>
       ) : (
-        <group quaternion={stemLeanQuaternion}>
+        <group ref={importedVisual} quaternion={stemLeanQuaternion}>
           <mesh castShadow>
             <tubeGeometry args={[curve, 28, naturalStemRadius(stem.kind, visualScale), 8, false]} />
             <meshStandardMaterial color="#617356" roughness={0.82} transparent={ghost} opacity={ghost ? 0.38 : 1} />
@@ -976,16 +977,13 @@ function FlowerStem({
                 <ImportedFlower kind={spec.kind} ghost={ghost} bloomColor={importedTint} fallback={null} />
               </group>
             </group>
-            {selected && !ghost && <mesh position={[0, headHeight / 2, 0.08]}>
-              <torusGeometry args={[headSelectionRadius, 0.008, 6, 64]} /><meshBasicMaterial color="#85906d" transparent opacity={0.65} />
-            </mesh>}
           </group>
-          {!ghost && <mesh position={[tip.x, tip.y + headHeight * 0.48, tip.z]}>
-            <sphereGeometry args={[Math.max(headSelectionRadius, 0.27), 10, 8]} />
-            <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
-          </mesh>}
         </group>
       )}
+      {selected && !ghost && <mesh ref={selectionRing} visible={false} raycast={() => null} renderOrder={20}>
+        <torusGeometry args={[clamp(visualScale * 0.085, 0.055, 0.12), 0.006, 6, 48]} />
+        <meshBasicMaterial color="#85906d" transparent opacity={0.85} depthTest={false} />
+      </mesh>}
     </group>
   );
 }

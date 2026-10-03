@@ -5,6 +5,8 @@ import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import units from "../public/models/units.json";
 import { resizeStemGeometry, stemCutAnchor } from "../lib/stem-geometry";
+import { softenIvyGeometry } from "../lib/ivy-shape";
+import { installBotanicalRaycast } from "../lib/botanical-picking";
 
 export const IMPORTED_FLOWERS: Record<string, string> = {
   rose: "/models/garden-rose.glb",
@@ -96,7 +98,7 @@ function addPetalTint(material: THREE.Material, bloomColor?: string, kind?: stri
   material.needsUpdate = true;
 }
 
-function LoadedModel({ kind, ghost, bloomColor, height = 1, visualScale = 1, head = false }: { kind: string; ghost: boolean; bloomColor?: string; height?: number; visualScale?: number; head?: boolean }) {
+function LoadedModel({ kind, ghost, bloomColor, height = 1, visualScale = 1, head = false, leanX = 0, leanZ = 0 }: { kind: string; ghost: boolean; bloomColor?: string; height?: number; visualScale?: number; head?: boolean; leanX?: number; leanZ?: number }) {
   const url = (head ? IMPORTED_FLOWERS : IMPORTED_STEMS)[kind];
   const { scene } = useGLTF(`${url}?v=${kind === "carnation" ? "carnation-natural-v13" : assetVersion}`);
   const { object, materials, geometries } = useMemo(() => {
@@ -106,10 +108,20 @@ function LoadedModel({ kind, ghost, bloomColor, height = 1, visualScale = 1, hea
     const sources: THREE.BufferGeometry[] = [];
     object.traverse((child) => { if (child instanceof THREE.Mesh) sources.push(child.geometry); });
     const anchor = head ? new THREE.Vector2() : stemCutAnchor(sources, height, visualScale);
+    let meshIndex = 0;
     object.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return;
+      child.name ||= `botanical-mesh-${meshIndex}`;
+      meshIndex++;
       if (!head) {
-        child.geometry = resizeStemGeometry(child.geometry, height, visualScale, anchor);
+        const source = child.geometry.clone();
+        source.setAttribute("botanicalSource", source.getAttribute("position").clone());
+        child.geometry = resizeStemGeometry(source, height, visualScale, anchor);
+        source.dispose();
+        if (kind === "ivy") {
+          const materials = Array.isArray(child.material) ? child.material : [child.material];
+          softenIvyGeometry(child.geometry, height, leanX, leanZ, materials.some(material => material.alphaTest > 0));
+        }
         geometries.push(child.geometry);
       }
       child.castShadow = !ghost;
@@ -134,14 +146,16 @@ function LoadedModel({ kind, ghost, bloomColor, height = 1, visualScale = 1, hea
           material.customProgramCacheKey = () => "natural-lily-v1";
         }
         addPetalTint(material, bloomColor, kind);
-        if (ghost) { material.transparent = true; material.opacity = 0.4; material.depthWrite = false; }
+        if (ghost) { material.transparent = true; material.opacity = 0.4; material.alphaTest *= 0.4; material.depthWrite = false; }
         materials.push(material);
         return material;
       };
       child.material = Array.isArray(child.material) ? child.material.map(prepare) : prepare(child.material);
+      child.userData.botanicalPick = true;
+      installBotanicalRaycast(child, ghost);
     });
     return { object, materials, geometries };
-  }, [scene, ghost, bloomColor, kind, head, height, visualScale]);
+  }, [scene, ghost, bloomColor, kind, head, height, visualScale, leanX, leanZ]);
   useEffect(() => () => {
     materials.forEach((material) => material.dispose());
     geometries.forEach((geometry) => geometry.dispose());
@@ -155,8 +169,8 @@ export function ImportedFlower({ kind, ghost, bloomColor, fallback }: { kind: st
   </ModelBoundary>;
 }
 
-export function ImportedStem({ kind, ghost = false, height, visualScale = 1, bloomColor, fallback }: { kind: string; ghost?: boolean; height: number; visualScale?: number; bloomColor?: string; fallback: ReactNode }) {
+export function ImportedStem({ kind, ghost = false, height, visualScale = 1, bloomColor, fallback, leanX = 0, leanZ = 0 }: { kind: string; ghost?: boolean; height: number; visualScale?: number; bloomColor?: string; fallback: ReactNode; leanX?: number; leanZ?: number }) {
   return <ModelBoundary fallback={fallback}>
-    <Suspense fallback={fallback}><LoadedModel kind={kind} ghost={ghost} height={height} visualScale={visualScale} bloomColor={bloomColor} /></Suspense>
+    <Suspense fallback={fallback}><LoadedModel kind={kind} ghost={ghost} height={height} visualScale={visualScale} bloomColor={bloomColor} leanX={leanX} leanZ={leanZ} /></Suspense>
   </ModelBoundary>;
 }
