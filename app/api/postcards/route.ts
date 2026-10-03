@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { getCurrentUser, verifyCsrfOrigin } from "@/lib/auth";
 import { createPostcard } from "@/lib/postcards";
 
 export const runtime = "nodejs";
@@ -6,6 +7,10 @@ export const runtime = "nodejs";
 const MAX_BODY = 1_600_000;
 
 export async function POST(request: Request) {
+  if (!verifyCsrfOrigin(request)) {
+    return Response.json({ error: "Cross-site request blocked." }, { status: 403 });
+  }
+
   const declaredSize = Number(request.headers.get("content-length") || 0);
   if (declaredSize > MAX_BODY) return Response.json({ error: "Postcard image is too large." }, { status: 413 });
 
@@ -26,6 +31,10 @@ export async function POST(request: Request) {
       return Response.json({ error: "Please check the postcard details and try again." }, { status: 400 });
     }
 
+    // Determine owner strictly from authenticated session cookie, never client payload
+    const currentUser = await getCurrentUser();
+    const userId = currentUser ? currentUser.id : null;
+
     const id = randomBytes(9).toString("base64url");
     await createPostcard({
       id,
@@ -34,6 +43,7 @@ export async function POST(request: Request) {
       message,
       from_name: from,
       image_base64: image.slice("data:image/jpeg;base64,".length),
+      user_id: userId,
     });
     return Response.json({ id, path: `/g/${id}` }, { status: 201 });
   } catch (error) {

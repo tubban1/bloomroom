@@ -8,18 +8,24 @@ import {
 } from "@react-three/fiber";
 import { ContactShadows, OrthographicCamera, useProgress } from "@react-three/drei";
 import {
+  Bookmark,
   Check,
   Copy,
   Download,
+  LogOut,
   RotateCcw,
   Undo2,
   Redo2,
   Share2,
   SlidersHorizontal,
   Sparkles,
+  User as UserIcon,
   Wind,
   X,
 } from "lucide-react";
+import AuthModal from "./AuthModal";
+import GardenModal from "./GardenModal";
+import type { SafeUser } from "@/lib/auth";
 import {
   useEffectEvent,
   useCallback,
@@ -1643,6 +1649,46 @@ function StudioScene({
   );
 }
 
+function createBouquetData(
+  stems: Stem[],
+  rotation: BouquetRotation,
+  vessel: VesselKind,
+  vesselColor: string,
+  vesselOpacity: number,
+  vesselScale: number,
+  backdrop: BackdropKind = "linen",
+  lightWarmth: number = 0,
+  lightDirection: number = DEFAULT_LIGHT_DIRECTION,
+  wind: number = 0.32,
+  sound?: string,
+) {
+  const compact = stems.map(({ kind, x, z, height, leanX, leanZ, seed, colorVariant, visualScale }) => ({
+    kind,
+    x,
+    z,
+    height,
+    leanX,
+    leanZ,
+    seed,
+    colorVariant,
+    visualScale,
+  }));
+  return {
+    version: 2,
+    stems: compact,
+    rotation,
+    vessel,
+    vesselColor,
+    vesselOpacity,
+    vesselScale,
+    backdrop,
+    lightWarmth,
+    lightDirection,
+    wind,
+    sound,
+  };
+}
+
 function encodeBouquet(
   stems: Stem[],
   rotation: BouquetRotation,
@@ -1653,10 +1699,11 @@ function encodeBouquet(
   backdrop: BackdropKind = "linen",
   lightWarmth: number = 0,
   lightDirection: number = DEFAULT_LIGHT_DIRECTION,
+  wind: number = 0.32,
+  sound?: string,
 ) {
-  const compact = stems.map(({ kind, x, z, height, leanX, leanZ, seed, colorVariant, visualScale }) => ({ kind, x, z, height, leanX, leanZ, seed, colorVariant, visualScale }));
-  const raw = encodeURIComponent(JSON.stringify({
-    stems: compact,
+  const obj = createBouquetData(
+    stems,
     rotation,
     vessel,
     vesselColor,
@@ -1665,7 +1712,10 @@ function encodeBouquet(
     backdrop,
     lightWarmth,
     lightDirection,
-  }));
+    wind,
+    sound,
+  );
+  const raw = encodeURIComponent(JSON.stringify(obj));
   return btoa(raw)
     .replaceAll("+", "-")
     .replaceAll("/", "_")
@@ -1682,6 +1732,8 @@ function decodeBouquet(value: string): {
   backdrop: BackdropKind;
   lightWarmth: number;
   lightDirection: number;
+  wind?: number;
+  sound?: string;
 } | null {
   try {
     let normalized = value
@@ -1702,6 +1754,8 @@ function decodeBouquet(value: string): {
           backdrop?: unknown;
           lightWarmth?: unknown;
           lightDirection?: unknown;
+          wind?: unknown;
+          sound?: unknown;
         } | null;
     const parsedStems = shared && "stems" in shared ? shared.stems : null;
     const rotation = shared && "rotation" in shared && shared.rotation
@@ -1725,10 +1779,15 @@ function decodeBouquet(value: string): {
     const lightDirection = shared && typeof shared.lightDirection === "number" && Number.isFinite(shared.lightDirection)
       ? clamp(shared.lightDirection, -180, 180)
       : DEFAULT_LIGHT_DIRECTION;
+    const wind = shared && typeof shared.wind === "number" && Number.isFinite(shared.wind)
+      ? clamp(shared.wind, 0, 1)
+      : 0.32;
+    const sound = shared && typeof shared.sound === "string" ? shared.sound : undefined;
+
     if (!Array.isArray(parsedStems)
-      || ![rotation.x, rotation.y, rotation.z].every((value) => typeof value === "number" && Number.isFinite(value))
+      || ![rotation.x, rotation.y, rotation.z].every((val) => typeof val === "number" && Number.isFinite(val))
       || parsedStems.some((stem) => !stem || !FLOWERS.some((flower) => flower.kind === stem.kind)
-      || ![stem.x, stem.z, stem.height, stem.leanX, stem.leanZ, stem.seed].every((value) => typeof value === "number" && Number.isFinite(value))
+      || ![stem.x, stem.z, stem.height, stem.leanX, stem.leanZ, stem.seed].every((val) => typeof val === "number" && Number.isFinite(val))
       || (stem.colorVariant !== undefined && (typeof stem.colorVariant !== "string" || !getFlowerColors(stem.kind).some((option) => option.id === stem.colorVariant)))
       || (stem.visualScale !== undefined && (typeof stem.visualScale !== "number" || !Number.isFinite(stem.visualScale))))) return null;
     return {
@@ -1751,7 +1810,20 @@ function decodeBouquet(value: string): {
       backdrop,
       lightWarmth,
       lightDirection,
+      wind,
+      sound,
     };
+  } catch {
+    return null;
+  }
+}
+
+function parseBouquetData(value: string | Record<string, unknown>) {
+  if (typeof value === "string") return decodeBouquet(value);
+  try {
+    const raw = encodeURIComponent(JSON.stringify(value));
+    const base64 = btoa(raw).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+    return decodeBouquet(base64);
   } catch {
     return null;
   }
@@ -1908,6 +1980,14 @@ export default function FlowerStudio() {
   const [publishing, setPublishing] = useState(false);
   const [shareError, setShareError] = useState("");
   const [toast, setToast] = useState<string | null>(null);
+  const [user, setUser] = useState<SafeUser | null>(null);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authPromptReason, setAuthPromptReason] = useState("");
+  const [gardenModalOpen, setGardenModalOpen] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
+  const [activeDraftVersion, setActiveDraftVersion] = useState<number>(1);
+  const [activeDraftTitle, setActiveDraftTitle] = useState<string>("");
   const postcardImage = postcardRender?.source === finishImage
     && postcardRender.to === recipient.trim()
     && postcardRender.message === giftMessage.trim()
@@ -2170,6 +2250,261 @@ export default function FlowerStudio() {
     setSelectedId(null);
   };
 
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.user) setUser(data.user);
+      })
+      .catch(() => {});
+  }, []);
+
+  const onAuthSuccess = async (newUser: SafeUser) => {
+    setUser(newUser);
+    setToast(t(language, "loginSuccess"));
+
+    try {
+      const pendingRaw = window.localStorage.getItem("bloomroom_pending_draft");
+      if (pendingRaw) {
+        const pending = JSON.parse(pendingRaw);
+        if (!pending.ownerUserId || pending.ownerUserId === newUser.id) {
+          setSavingDraft(true);
+          const res = await fetch("/api/user/drafts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: pending.title || t(language, "untitledBouquet"),
+              bouquet_data: pending.bouquetData,
+              preview_image: pending.previewImage,
+            }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setActiveDraftId(data.draft.id);
+            setActiveDraftVersion(data.draft.version);
+            setActiveDraftTitle(data.draft.title);
+            window.localStorage.removeItem("bloomroom_pending_draft");
+            setToast(t(language, "draftSaved"));
+          }
+        }
+      }
+    } catch {
+      // Ignored
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // Ignored
+    }
+    setUser(null);
+    setActiveDraftId(null);
+    setActiveDraftVersion(1);
+    setActiveDraftTitle("");
+    setToast(t(language, "logoutSuccess"));
+  };
+
+  const handleSaveDraft = async () => {
+    if (!stems.length) {
+      setToast(t(language, "addFirst"));
+      return;
+    }
+    if (savingDraft) return;
+
+    setSavingDraft(true);
+    let previewUrl: string | null = null;
+    try {
+      const source = captureSceneRef.current?.(false);
+      if (source) {
+        const photo = new Image();
+        photo.src = source;
+        await photo.decode();
+        const canvas = document.createElement("canvas");
+        const w = 480;
+        const h = Math.round((photo.height / photo.width) * w);
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.fillStyle = BACKDROP_CONFIG[backdrop]?.color ?? "#EEE9DD";
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(photo, 0, 0, w, h);
+          previewUrl = canvas.toDataURL("image/jpeg", 0.75);
+        }
+      }
+    } catch {
+      previewUrl = null;
+    }
+
+    const bouquetData = createBouquetData(
+      stems,
+      bouquetRotation,
+      vessel,
+      vesselColor,
+      vesselOpacity,
+      vesselScale,
+      backdrop,
+      lightWarmth,
+      lightDirection,
+      wind,
+    );
+
+    const draftTitle = activeDraftTitle || `${flowerName(language, stems[0].kind)} · ${t(language, "myGarden")}`;
+
+    try {
+      window.localStorage.setItem(
+        "bloomroom_pending_draft",
+        JSON.stringify({
+          draftId: activeDraftId,
+          title: draftTitle,
+          bouquetData,
+          previewImage: previewUrl,
+          serverVersion: activeDraftVersion,
+          localVersion: Date.now(),
+          ownerUserId: user?.id ?? null,
+          savedAt: Date.now(),
+        }),
+      );
+    } catch {
+      setToast("本地存储空间不足，建议直接登录同步至云端。");
+    }
+
+    if (!user) {
+      setSavingDraft(false);
+      setAuthPromptReason(t(language, "loginToSaveHint"));
+      setAuthModalOpen(true);
+      return;
+    }
+
+    try {
+      if (activeDraftId) {
+        const res = await fetch(`/api/user/drafts/${activeDraftId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: draftTitle,
+            bouquet_data: bouquetData,
+            preview_image: previewUrl,
+            version: activeDraftVersion,
+          }),
+        });
+
+        if (res.status === 409) {
+          const copyRes = await fetch("/api/user/drafts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: `${draftTitle} (副本)`,
+              bouquet_data: bouquetData,
+              preview_image: previewUrl,
+            }),
+          });
+          if (copyRes.ok) {
+            const copyData = await copyRes.json();
+            setActiveDraftId(copyData.draft.id);
+            setActiveDraftVersion(copyData.draft.version);
+            setActiveDraftTitle(copyData.draft.title);
+            window.localStorage.removeItem("bloomroom_pending_draft");
+            setToast(t(language, "conflictNotice"));
+          }
+          return;
+        }
+
+        if (res.ok) {
+          const data = await res.json();
+          setActiveDraftVersion(data.draft.version);
+          setActiveDraftTitle(data.draft.title);
+          window.localStorage.removeItem("bloomroom_pending_draft");
+          setToast(t(language, "draftUpdated"));
+          return;
+        }
+      }
+
+      const createRes = await fetch("/api/user/drafts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: draftTitle,
+          bouquet_data: bouquetData,
+          preview_image: previewUrl,
+        }),
+      });
+
+      if (createRes.ok) {
+        const data = await createRes.json();
+        setActiveDraftId(data.draft.id);
+        setActiveDraftVersion(data.draft.version);
+        setActiveDraftTitle(data.draft.title);
+        window.localStorage.removeItem("bloomroom_pending_draft");
+        setToast(t(language, "draftSaved"));
+      } else {
+        throw new Error("Failed to save draft");
+      }
+    } catch {
+      setToast(t(language, "savingError"));
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
+  const handleLoadDraft = async (draftId: string) => {
+    try {
+      const res = await fetch(`/api/user/drafts/${draftId}`);
+      if (!res.ok) throw new Error("Could not load draft");
+      const data = await res.json();
+      const parsed = parseBouquetData(data.draft.bouquet_data);
+      if (!parsed) throw new Error("Invalid draft bouquet data");
+
+      checkpoint();
+      setStems(parsed.stems);
+      setBouquetRotation(parsed.rotation);
+      setVessel(parsed.vessel);
+      setVesselColor(parsed.vesselColor);
+      setVesselOpacity(parsed.vesselOpacity);
+      setVesselScale(parsed.vesselScale);
+      setBackdrop(parsed.backdrop);
+      setLightWarmth(parsed.lightWarmth);
+      setLightDirection(parsed.lightDirection);
+      if (parsed.wind !== undefined) setWind(parsed.wind);
+
+      setActiveDraftId(data.draft.id);
+      setActiveDraftVersion(data.draft.version);
+      setActiveDraftTitle(data.draft.title);
+      setSelectedId(null);
+      setHeld(null);
+      setToast(t(language, "draftLoaded"));
+    } catch {
+      setToast(t(language, "savingError"));
+    }
+  };
+
+  const handleRemixPostcard = (bouquetString: string, toName: string) => {
+    const parsed = decodeBouquet(bouquetString);
+    if (!parsed) return;
+    checkpoint();
+    setStems(parsed.stems);
+    setBouquetRotation(parsed.rotation);
+    setVessel(parsed.vessel);
+    setVesselColor(parsed.vesselColor);
+    setVesselOpacity(parsed.vesselOpacity);
+    setVesselScale(parsed.vesselScale);
+    setBackdrop(parsed.backdrop);
+    setLightWarmth(parsed.lightWarmth);
+    setLightDirection(parsed.lightDirection);
+    if (parsed.wind !== undefined) setWind(parsed.wind);
+
+    setActiveDraftId(null);
+    setActiveDraftVersion(1);
+    setActiveDraftTitle(toName ? `${toName} · ${t(language, "remixCopy")}` : t(language, "untitledBouquet"));
+    setSelectedId(null);
+    setHeld(null);
+    setToast(t(language, "restored"));
+  };
+
   const startOver = () => {
     checkpoint();
     setStems([]);
@@ -2185,6 +2520,10 @@ export default function FlowerStudio() {
     setSelectedId(null);
     setDragId(null);
     setHighResImage(null);
+    setActiveDraftId(null);
+    setActiveDraftVersion(1);
+    setActiveDraftTitle("");
+    window.localStorage.removeItem("bloomroom_pending_draft");
     window.history.replaceState(null, "", window.location.pathname);
   };
 
@@ -2368,6 +2707,17 @@ export default function FlowerStudio() {
             <RotateCcw size={15} strokeWidth={1.5} />
           </button>
           <button
+            className="save-draft-button"
+            type="button"
+            aria-label={t(language, "saveDraft")}
+            title={t(language, "saveDraft")}
+            onClick={handleSaveDraft}
+            disabled={savingDraft || stems.length === 0}
+          >
+            <Bookmark size={14} />
+            <span>{savingDraft ? t(language, "savingDraft") : t(language, "saveDraft")}</span>
+          </button>
+          <button
             className="finish-button"
             disabled={!stems.length}
             type="button"
@@ -2375,6 +2725,42 @@ export default function FlowerStudio() {
           >
             {t(language, "finish")}
           </button>
+          {user ? (
+            <div className="user-nav">
+              <button
+                className="user-garden-button"
+                type="button"
+                onClick={() => setGardenModalOpen(true)}
+                title={t(language, "myGarden")}
+              >
+                🌿 {t(language, "myGarden")}
+              </button>
+              <span className="user-badge" title={user.username}>
+                {user.username}
+              </span>
+              <button
+                className="icon-button logout-button"
+                type="button"
+                aria-label={t(language, "logout")}
+                title={t(language, "logout")}
+                onClick={handleLogout}
+              >
+                <LogOut size={14} />
+              </button>
+            </div>
+          ) : (
+            <button
+              className="login-entry-button"
+              type="button"
+              onClick={() => {
+                setAuthPromptReason("");
+                setAuthModalOpen(true);
+              }}
+            >
+              <UserIcon size={14} />
+              <span>{t(language, "login")}</span>
+            </button>
+          )}
         </div>
       </header>
 
@@ -2884,6 +3270,23 @@ export default function FlowerStudio() {
           )}
         </div>
       ) : null}
+
+      <AuthModal
+        isOpen={authModalOpen}
+        language={language}
+        promptReason={authPromptReason}
+        onClose={() => setAuthModalOpen(false)}
+        onSuccess={onAuthSuccess}
+      />
+
+      <GardenModal
+        isOpen={gardenModalOpen}
+        language={language}
+        user={user}
+        onClose={() => setGardenModalOpen(false)}
+        onLoadDraft={handleLoadDraft}
+        onRemixPostcard={handleRemixPostcard}
+      />
 
       <a className="model-credits" href="/models/credits.html" target="_blank" rel="noreferrer">{t(language, "credits")} ↗</a>
       {toast ? <div className="toast">{toast}</div> : null}
