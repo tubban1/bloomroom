@@ -32,6 +32,7 @@ import GalleryModal from "./GalleryModal";
 import VoiceRecorder from "./VoiceRecorder";
 import AiReadingCard from "./AiReadingCard";
 import { computeBouquetFingerprint, type AiReading } from "@/lib/ai-reading";
+import { createCreationSync } from "@/lib/creation-sync";
 import type { SafeUser } from "@/lib/auth";
 import {
   useEffectEvent,
@@ -2000,8 +2001,12 @@ export default function FlowerStudio() {
   const [currentAiReading, setCurrentAiReading] = useState<AiReading | null>(null);
   const [galleryModalOpen, setGalleryModalOpen] = useState(false);
   const [creationVisibility, setCreationVisibility] = useState<"public" | "private">("public");
-  const [activeCreationId, setActiveCreationId] = useState<string | null>(null);
   const [savingCreation, setSavingCreation] = useState(false);
+  const [creationError, setCreationError] = useState("");
+  const creationSync = useRef<ReturnType<typeof createCreationSync> | null>(null);
+  const creationSaveCount = useRef(0);
+  const visibilityRevision = useRef(0);
+  const finishedCreation = useRef<{ key: string; form: FormData } | null>(null);
 
   const bouquetDataObj = useMemo(
     () =>
@@ -2579,7 +2584,7 @@ export default function FlowerStudio() {
 
     setActiveDraftId(null);
     setActiveDraftVersion(1);
-    setActiveCreationId(null);
+    finishedCreation.current = null;
     setActiveDraftTitle(toName ? `${toName} · ${t(language, "remixCopy")}` : t(language, "untitledBouquet"));
     setSelectedId(null);
     setHeld(null);
@@ -2614,7 +2619,7 @@ export default function FlowerStudio() {
 
     setActiveDraftId(null);
     setActiveDraftVersion(1);
-    setActiveCreationId(null);
+    finishedCreation.current = null;
     setActiveDraftTitle(originalTitle ? `${originalTitle} · ${t(language, "remixCopy")}` : t(language, "untitledBouquet"));
     setSelectedId(null);
     setHeld(null);
@@ -2639,7 +2644,7 @@ export default function FlowerStudio() {
     setActiveDraftId(null);
     setActiveDraftVersion(1);
     setActiveDraftTitle("");
-    setActiveCreationId(null);
+    finishedCreation.current = null;
     setVoiceBlob(null);
     setVoiceDurationMs(0);
     window.localStorage.removeItem("bloomroom_pending_draft");
@@ -2664,6 +2669,38 @@ export default function FlowerStudio() {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
+
+  const persistFinishedCreation = async (visibility = creationVisibility) => {
+    const snapshot = finishedCreation.current;
+    if (!snapshot) throw new Error(t(language, "savingError"));
+    creationSync.current ??= createCreationSync();
+    creationSaveCount.current++;
+    setSavingCreation(true);
+    setCreationError("");
+    try {
+      const id = await creationSync.current(snapshot.key, snapshot.form, user ? visibility : "public");
+      if (finishedCreation.current === snapshot) setCreationError("");
+      return id;
+    } catch (error) {
+      if (finishedCreation.current === snapshot) setCreationError(error instanceof Error ? error.message : t(language, "savingError"));
+      throw error;
+    } finally {
+      creationSaveCount.current--;
+      if (creationSaveCount.current === 0) setSavingCreation(false);
+    }
+  };
+
+  const changeCreationVisibility = async (next: "public" | "private") => {
+    const previous = creationVisibility;
+    const snapshot = finishedCreation.current;
+    const revision = ++visibilityRevision.current;
+    setCreationVisibility(next);
+    try {
+      await persistFinishedCreation(next);
+    } catch {
+      if (revision === visibilityRevision.current && finishedCreation.current === snapshot) setCreationVisibility(previous);
+    }
+  };
 
   const openFinish = () => {
     if (modelsLoading) { setToast(t(language, "loadingModels")); return; }
@@ -2690,14 +2727,24 @@ export default function FlowerStudio() {
       context.fillStyle = currentBackdropColor;
       context.fillRect(0, 0, width, height);
       context.drawImage(photo, 0, 0, width, height);
-      setFinishImage(snapshot.toDataURL("image/jpeg", 0.88));
+      const preview = snapshot.toDataURL("image/jpeg", 0.88);
+      const form = new FormData();
+      form.append("bouquet_data", JSON.stringify(bouquetDataObj));
+      form.append("title", activeDraftTitle || "");
+      if (activeDraftId) form.append("source_draft_id", activeDraftId);
+      const binary = atob(preview.split(",")[1]);
+      const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+      form.append("image", new Blob([bytes], { type: "image/jpeg" }), "preview.jpg");
+      finishedCreation.current = { key: `${user?.id || "guest"}:${JSON.stringify(bouquetDataObj)}`, form };
+      setFinishImage(preview);
       setHighResImage(highResSource);
       setShareUrl(null);
       setPostcardRender(null);
       setShareError("");
-      setCreationVisibility("public");
+      if (!user) setCreationVisibility("public");
       setMobilePostcardOpen(false);
       setFinishOpen(true);
+      void persistFinishedCreation().catch(() => { /* Error and retry are shown in the dialog. */ });
     }));
   };
 
@@ -2706,6 +2753,7 @@ export default function FlowerStudio() {
     setPublishing(true);
     setShareError("");
     try {
+      const creationId = await persistFinishedCreation();
       const formData = new FormData();
       formData.append(
         "bouquet",
@@ -2726,9 +2774,7 @@ export default function FlowerStudio() {
       formData.append("from", sender);
       formData.append("visibility", user ? creationVisibility : "public");
       formData.append("title", activeDraftTitle || "");
-      if (activeCreationId) {
-        formData.append("creation_id", activeCreationId);
-      }
+      formData.append("creation_id", creationId);
 
       // Convert finishImage dataURL to Blob for efficient FormData transfer
       if (finishImage.startsWith("data:image/")) {
@@ -2753,9 +2799,6 @@ export default function FlowerStudio() {
       });
       const result = (await response.json()) as { path?: string; id?: string; creation_id?: string; error?: string };
       if (!response.ok || !result.path) throw new Error(result.error || t(language, "savingError"));
-      if (result.creation_id) {
-        setActiveCreationId(result.creation_id);
-      }
       setShareUrl(`https://flower.fde.fan${result.path}?lang=${language}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t(language, "savingError");
@@ -2765,41 +2808,6 @@ export default function FlowerStudio() {
     }
   };
 
-  const handleSaveCreation = async () => {
-    if (!finishImage || savingCreation) return;
-    setSavingCreation(true);
-    try {
-      const formData = new FormData();
-      formData.append("bouquet_data", JSON.stringify(bouquetDataObj));
-      formData.append("title", activeDraftTitle || "");
-      formData.append("visibility", user ? creationVisibility : "public");
-      if (activeDraftId) {
-        formData.append("source_draft_id", activeDraftId);
-      }
-
-      if (finishImage.startsWith("data:image/")) {
-        const bin = atob(finishImage.split(",")[1]);
-        const bytes = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        const imageBlob = new Blob([bytes], { type: "image/jpeg" });
-        formData.append("image", imageBlob, "preview.jpg");
-      }
-
-      const res = await fetch("/api/creations", {
-        method: "POST",
-        body: formData,
-      });
-      const data = (await res.json()) as { creation?: { id: string }; error?: string };
-      if (!res.ok || !data.creation) throw new Error(data.error || t(language, "savingError"));
-      setActiveCreationId(data.creation.id);
-      setToast(t(language, "savedToGallery"));
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : t(language, "savingError");
-      setToast(msg);
-    } finally {
-      setSavingCreation(false);
-    }
-  };
 
   const copyShareLink = async () => {
     if (!shareUrl) return false;
@@ -3480,14 +3488,14 @@ export default function FlowerStudio() {
                     <button
                       type="button"
                       className={`visibility-opt ${creationVisibility === "public" ? "active" : ""}`}
-                      onClick={() => setCreationVisibility("public")}
+                      onClick={() => { void changeCreationVisibility("public"); }}
                     >
                       {t(language, "publicBadge")}
                     </button>
                     <button
                       type="button"
                       className={`visibility-opt ${creationVisibility === "private" ? "active" : ""}`}
-                      onClick={() => setCreationVisibility("private")}
+                      onClick={() => { void changeCreationVisibility("private"); }}
                     >
                       {t(language, "privateBadge")}
                     </button>
@@ -3495,24 +3503,16 @@ export default function FlowerStudio() {
                 ) : null}
               </div>
 
+              {savingCreation && <p className="creation-save-status" role="status">{t(language, "savingToGallery")}</p>}
+              {creationError && <div className="share-error" role="alert">
+                <span>{creationError}</span>{" "}
+                <button type="button" disabled={savingCreation} onClick={() => { void persistFinishedCreation().catch(() => {}); }}>{t(language, "retrySave")}</button>
+              </div>}
               <div className="finish-actions">
                 <button type="button" className="primary" onClick={savePostcard} disabled={!postcardImage}>
                   <Download size={13} /> {mobileSave ? t(language, "saveToPhotos") : t(language, "download")}
                 </button>
-                <button
-                  type="button"
-                  className="save-creation-btn"
-                  onClick={handleSaveCreation}
-                  disabled={savingCreation || !!activeCreationId}
-                >
-                  <Compass size={13} />
-                  {activeCreationId
-                    ? t(language, "saved")
-                    : savingCreation
-                      ? t(language, "savingToGallery")
-                      : t(language, "saveToGallery")}
-                </button>
-                <button type="button" onClick={createShareLink} disabled={publishing || !finishImage}>
+                <button type="button" onClick={createShareLink} disabled={publishing || savingCreation || !finishImage}>
                   {publishing ? t(language, "creating") : shareUrl ? t(language, "createAnother") : t(language, "createLink")}
                 </button>
                 <button
