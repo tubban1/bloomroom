@@ -3,6 +3,8 @@
   padding: 26px 24px 70px;
   background: #e9e5db;
   color: #22231f;
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .header {
@@ -43,8 +45,8 @@
 }
 
 .photo {
-  height: min(55vw, 560px);
-  min-height: 320px;
+  height: min(50vw, 500px, calc(100vh - 340px));
+  min-height: 280px;
   overflow: hidden;
   background: #e6e1d6;
 }

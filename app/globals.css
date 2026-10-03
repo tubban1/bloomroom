@@ -26,7 +26,13 @@ body {
 body {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+body:has(.studio) {
   overflow: hidden;
+  height: 100svh;
 }
 
 button,
@@ -2556,4 +2562,248 @@ button:focus-visible, input:focus-visible { outline: 2px solid #7a8965; outline-
   from { opacity: 0; transform: translateY(2px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ==========================================================================
+   AI Floral Reflection (花间照见)
+   ========================================================================== */
+
+.ai-reading-section {
+  margin: 18px 0 14px;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.42);
+  border: 1px solid rgba(25, 25, 20, 0.1);
+  border-radius: 16px;
+  transition: all 0.2s ease;
+}
+
+.ai-reading-header {
+  margin-bottom: 12px;
+}
+
+.ai-reading-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #3b4537;
+}
+
+.ai-reading-icon {
+  color: #556750;
+}
+
+.ai-reading-title {
+  font-family: Georgia, serif;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  margin: 0;
+  color: #21201b;
+}
+
+.ai-reading-subtitle {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.ai-reading-cta {
+  display: flex;
+  margin-top: 10px;
+}
+
+.ai-reading-generate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(71, 84, 67, 0.25);
+  background: rgba(71, 84, 67, 0.08);
+  color: #384534;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.ai-reading-generate-btn:hover {
+  background: rgba(71, 84, 67, 0.16);
+  border-color: rgba(71, 84, 67, 0.4);
+  transform: translateY(-1px);
+}
+
+.ai-reading-loading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: #556750;
+  background: rgba(71, 84, 67, 0.05);
+  border-radius: 12px;
+}
+
+.ai-reading-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #9f3a38;
+  background: rgba(220, 50, 50, 0.06);
+  border: 1px solid rgba(220, 50, 50, 0.18);
+  border-radius: 10px;
+}
+
+.ai-reading-retry-link {
+  background: transparent;
+  border: 0;
+  color: #9f3a38;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.ai-reading-card {
+  margin-top: 8px;
+  padding: 14px 16px;
+  background: #fbf9f4;
+  border: 1px solid rgba(25, 25, 20, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  animation: fadeIn 0.3s ease;
+}
+
+.ai-reading-outdated-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  margin-bottom: 12px;
+  background: rgba(180, 130, 40, 0.09);
+  border: 1px solid rgba(180, 130, 40, 0.2);
+  border-radius: 8px;
+  font-size: 11px;
+  color: #835d1a;
+}
+
+.ai-reading-recalc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  color: #835d1a;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ai-reading-card-title {
+  font-family: Georgia, serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: #21201b;
+  margin: 0 0 10px;
+  letter-spacing: 0.02em;
+}
+
+.ai-reading-quote-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 12px;
+  margin-bottom: 12px;
+  background: rgba(71, 84, 67, 0.06);
+  border-left: 2.5px solid #475443;
+  border-radius: 0 8px 8px 0;
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: 13px;
+  color: #3b4837;
+  line-height: 1.4;
+}
+
+.quote-mark {
+  opacity: 0.6;
+}
+
+.ai-reading-item {
+  margin-bottom: 10px;
+}
+
+.ai-reading-item:last-of-type {
+  margin-bottom: 14px;
+}
+
+.ai-reading-item-label {
+  display: block;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+
+.ai-reading-item-desc {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #383733;
+}
+
+.ai-reading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(25, 25, 20, 0.1);
+}
+
+.ai-reading-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border: 1px solid rgba(25, 25, 20, 0.14);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #32312b;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ai-reading-action-btn:hover {
+  background: #f4efe4;
+  border-color: rgba(25, 25, 20, 0.28);
+}
+
+.ai-reading-action-btn.subtle {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.ai-reading-action-btn.subtle:hover {
+  background: rgba(25, 25, 20, 0.05);
+  color: #21201b;
+}
+
+.ai-reading-disclaimer {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 10px;
+  color: #9c988e;
+  font-style: italic;
+}
+
 

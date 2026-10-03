@@ -64,8 +64,11 @@ export async function PUT(
       : {};
     const previewImage = typeof body.preview_image === "string" ? body.preview_image : undefined;
     const version = typeof body.version === "number" ? body.version : undefined;
+    const aiReading = body.ai_reading !== undefined
+      ? (body.ai_reading && typeof body.ai_reading === "object" ? (body.ai_reading as Record<string, unknown>) : null)
+      : undefined;
 
-    const result = await updateDraft(id, user.id, title, bouquetData, previewImage, version);
+    const result = await updateDraft(id, user.id, title, bouquetData, previewImage, version, aiReading);
 
     if (result.notFound) {
       return Response.json({ error: "Draft not found." }, { status: 404 });

@@ -11,6 +11,7 @@ export type DraftSummary = {
 
 export type DraftDetail = DraftSummary & {
   bouquet_data: Record<string, unknown>;
+  ai_reading?: Record<string, unknown> | null;
 };
 
 export type SentPostcardSummary = {
@@ -87,10 +88,12 @@ export async function createDraft(
   bouquetData: Record<string, unknown>,
   previewImage?: string | null,
   customId?: string,
+  aiReading?: Record<string, unknown> | null,
 ): Promise<DraftSummary> {
   const db = getDatabasePool();
   const safeTitle = (title || "未命名花束").trim().slice(0, 64);
   const safePreview = previewImage && previewImage.length <= 600000 ? previewImage : null;
+  const safeAiReading = aiReading ? JSON.stringify(aiReading) : null;
 
   if (customId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(customId)) {
     const res = await db.query<{
@@ -101,17 +104,18 @@ export async function createDraft(
       created_at: Date;
       updated_at: Date;
     }>(
-      `INSERT INTO bloomroom.drafts (id, user_id, title, bouquet_data, preview_image, version)
-       VALUES ($1, $2, $3, $4, $5, 1)
+      `INSERT INTO bloomroom.drafts (id, user_id, title, bouquet_data, preview_image, ai_reading, version)
+       VALUES ($1, $2, $3, $4, $5, $6, 1)
        ON CONFLICT (id) DO UPDATE
        SET title = EXCLUDED.title,
            bouquet_data = EXCLUDED.bouquet_data,
            preview_image = COALESCE(EXCLUDED.preview_image, bloomroom.drafts.preview_image),
+           ai_reading = COALESCE(EXCLUDED.ai_reading, bloomroom.drafts.ai_reading),
            version = bloomroom.drafts.version + 1,
            updated_at = now()
        WHERE bloomroom.drafts.user_id = $2
        RETURNING id, title, preview_image, version, created_at, updated_at`,
-      [customId, userId, safeTitle, JSON.stringify(bouquetData), safePreview],
+      [customId, userId, safeTitle, JSON.stringify(bouquetData), safePreview, safeAiReading],
     );
     const row = res.rows[0];
     return {
@@ -132,10 +136,10 @@ export async function createDraft(
     created_at: Date;
     updated_at: Date;
   }>(
-    `INSERT INTO bloomroom.drafts (user_id, title, bouquet_data, preview_image, version)
-     VALUES ($1, $2, $3, $4, 1)
+    `INSERT INTO bloomroom.drafts (user_id, title, bouquet_data, preview_image, ai_reading, version)
+     VALUES ($1, $2, $3, $4, $5, 1)
      RETURNING id, title, preview_image, version, created_at, updated_at`,
-    [userId, safeTitle, JSON.stringify(bouquetData), safePreview],
+    [userId, safeTitle, JSON.stringify(bouquetData), safePreview, safeAiReading],
   );
 
   const row = res.rows[0];
@@ -156,11 +160,12 @@ export async function getDraftDetail(draftId: string, userId: string): Promise<D
     title: string;
     bouquet_data: Record<string, unknown>;
     preview_image: string | null;
+    ai_reading: Record<string, unknown> | null;
     version: number;
     created_at: Date;
     updated_at: Date;
   }>(
-    `SELECT id, title, bouquet_data, preview_image, version, created_at, updated_at
+    `SELECT id, title, bouquet_data, preview_image, ai_reading, version, created_at, updated_at
      FROM bloomroom.drafts
      WHERE id = $1 AND user_id = $2`,
     [draftId, userId],
@@ -174,6 +179,7 @@ export async function getDraftDetail(draftId: string, userId: string): Promise<D
     title: row.title,
     bouquet_data: row.bouquet_data,
     preview_image: row.preview_image,
+    ai_reading: row.ai_reading,
     version: row.version,
     created_at: row.created_at.toISOString(),
     updated_at: row.updated_at.toISOString(),
@@ -187,10 +193,12 @@ export async function updateDraft(
   bouquetData: Record<string, unknown>,
   previewImage: string | null | undefined,
   expectedVersion?: number,
+  aiReading?: Record<string, unknown> | null,
 ): Promise<{ draft?: DraftSummary; conflict?: boolean; notFound?: boolean }> {
   const db = getDatabasePool();
   const safeTitle = (title || "未命名花束").trim().slice(0, 64);
   const safePreview = previewImage && previewImage.length <= 600000 ? previewImage : null;
+  const safeAiReading = aiReading !== undefined ? (aiReading ? JSON.stringify(aiReading) : null) : undefined;
 
   if (typeof expectedVersion === "number") {
     const res = await db.query<{
@@ -205,11 +213,12 @@ export async function updateDraft(
        SET title = $3,
            bouquet_data = $4,
            preview_image = CASE WHEN $5::text IS NOT NULL THEN $5 ELSE preview_image END,
+           ai_reading = CASE WHEN $7::jsonb IS NOT NULL THEN $7::jsonb ELSE ai_reading END,
            version = version + 1,
            updated_at = now()
        WHERE id = $1 AND user_id = $2 AND version = $6
        RETURNING id, title, preview_image, version, created_at, updated_at`,
-      [draftId, userId, safeTitle, JSON.stringify(bouquetData), safePreview, expectedVersion],
+      [draftId, userId, safeTitle, JSON.stringify(bouquetData), safePreview, expectedVersion, safeAiReading],
     );
 
     if (res.rows.length > 0) {
@@ -251,11 +260,12 @@ export async function updateDraft(
      SET title = $3,
          bouquet_data = $4,
          preview_image = CASE WHEN $5::text IS NOT NULL THEN $5 ELSE preview_image END,
+         ai_reading = CASE WHEN $6::jsonb IS NOT NULL THEN $6::jsonb ELSE ai_reading END,
          version = version + 1,
          updated_at = now()
      WHERE id = $1 AND user_id = $2
      RETURNING id, title, preview_image, version, created_at, updated_at`,
-    [draftId, userId, safeTitle, JSON.stringify(bouquetData), safePreview],
+    [draftId, userId, safeTitle, JSON.stringify(bouquetData), safePreview, safeAiReading],
   );
 
   if (res.rows.length === 0) return { notFound: true };

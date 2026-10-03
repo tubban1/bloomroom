@@ -26,6 +26,8 @@ import {
 import AuthModal from "./AuthModal";
 import GardenModal from "./GardenModal";
 import VoiceRecorder from "./VoiceRecorder";
+import AiReadingCard from "./AiReadingCard";
+import { computeBouquetFingerprint, type AiReading } from "@/lib/ai-reading";
 import type { SafeUser } from "@/lib/auth";
 import {
   useEffectEvent,
@@ -1991,6 +1993,40 @@ export default function FlowerStudio() {
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
   const [activeDraftVersion, setActiveDraftVersion] = useState<number>(1);
   const [activeDraftTitle, setActiveDraftTitle] = useState<string>("");
+  const [currentAiReading, setCurrentAiReading] = useState<AiReading | null>(null);
+
+  const bouquetDataObj = useMemo(
+    () =>
+      createBouquetData(
+        stems,
+        bouquetRotation,
+        vessel,
+        vesselColor,
+        vesselOpacity,
+        vesselScale,
+        backdrop,
+        lightWarmth,
+        lightDirection,
+        wind,
+      ),
+    [
+      stems,
+      bouquetRotation,
+      vessel,
+      vesselColor,
+      vesselOpacity,
+      vesselScale,
+      backdrop,
+      lightWarmth,
+      lightDirection,
+      wind,
+    ],
+  );
+
+  const currentBouquetFingerprint = useMemo(
+    () => computeBouquetFingerprint(bouquetDataObj),
+    [bouquetDataObj],
+  );
   const postcardImage = postcardRender?.source === finishImage
     && postcardRender.to === recipient.trim()
     && postcardRender.message === giftMessage.trim()
@@ -2279,6 +2315,7 @@ export default function FlowerStudio() {
               title: pending.title || t(language, "untitledBouquet"),
               bouquet_data: pending.bouquetData,
               preview_image: pending.previewImage,
+              ai_reading: pending.aiReading || pending.ai_reading,
             }),
           });
           if (res.ok) {
@@ -2358,6 +2395,17 @@ export default function FlowerStudio() {
 
     const draftTitle = activeDraftTitle || `${flowerName(language, stems[0].kind)} · ${t(language, "myGarden")}`;
 
+    let matchingAiReading: AiReading | null = currentAiReading;
+    if (!matchingAiReading) {
+      try {
+        const stored = window.localStorage.getItem("bloomroom_ai_readings");
+        if (stored) {
+          const map = JSON.parse(stored);
+          matchingAiReading = map[`${currentBouquetFingerprint}:${language}`] || null;
+        }
+      } catch {}
+    }
+
     try {
       window.localStorage.setItem(
         "bloomroom_pending_draft",
@@ -2366,6 +2414,7 @@ export default function FlowerStudio() {
           title: draftTitle,
           bouquetData,
           previewImage: previewUrl,
+          aiReading: matchingAiReading,
           serverVersion: activeDraftVersion,
           localVersion: Date.now(),
           ownerUserId: user?.id ?? null,
@@ -2393,6 +2442,7 @@ export default function FlowerStudio() {
             bouquet_data: bouquetData,
             preview_image: previewUrl,
             version: activeDraftVersion,
+            ai_reading: matchingAiReading,
           }),
         });
 
@@ -2404,6 +2454,7 @@ export default function FlowerStudio() {
               title: `${draftTitle} (副本)`,
               bouquet_data: bouquetData,
               preview_image: previewUrl,
+              ai_reading: matchingAiReading,
             }),
           });
           if (copyRes.ok) {
@@ -2434,6 +2485,7 @@ export default function FlowerStudio() {
           title: draftTitle,
           bouquet_data: bouquetData,
           preview_image: previewUrl,
+          ai_reading: matchingAiReading,
         }),
       });
 
@@ -2473,6 +2525,19 @@ export default function FlowerStudio() {
       setLightWarmth(parsed.lightWarmth);
       setLightDirection(parsed.lightDirection);
       if (parsed.wind !== undefined) setWind(parsed.wind);
+
+      if (data.draft.ai_reading) {
+        try {
+          const r = data.draft.ai_reading as AiReading;
+          setCurrentAiReading(r);
+          const stored = window.localStorage.getItem("bloomroom_ai_readings");
+          const map = stored ? JSON.parse(stored) : {};
+          if (r.fingerprint && r.language) {
+            map[`${r.fingerprint}:${r.language}`] = r;
+            window.localStorage.setItem("bloomroom_ai_readings", JSON.stringify(map));
+          }
+        } catch {}
+      }
 
       setActiveDraftId(data.draft.id);
       setActiveDraftVersion(data.draft.version);
@@ -3247,6 +3312,14 @@ export default function FlowerStudio() {
               <div className="eyebrow">{t(language, "sendEyebrow")}</div>
               <h2>{t(language, "sendTitle")}</h2>
               <p>{t(language, "sendHint")}</p>
+
+              <AiReadingCard
+                language={language}
+                bouquetData={bouquetDataObj}
+                bouquetImage={finishImage}
+                currentFingerprint={currentBouquetFingerprint}
+                onReadingChange={(r) => setCurrentAiReading(r)}
+              />
 
               <div className="gift-fields">
                 <label htmlFor="gift-to">{t(language, "to")}</label>

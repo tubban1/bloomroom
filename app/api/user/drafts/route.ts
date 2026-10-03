@@ -33,8 +33,11 @@ export async function POST(request: Request) {
       : {};
     const previewImage = typeof body.preview_image === "string" ? body.preview_image : null;
     const customId = typeof body.id === "string" ? body.id : undefined;
+    const aiReading = body.ai_reading && typeof body.ai_reading === "object"
+      ? (body.ai_reading as Record<string, unknown>)
+      : null;
 
-    const draft = await createDraft(user.id, title, bouquetData, previewImage, customId);
+    const draft = await createDraft(user.id, title, bouquetData, previewImage, customId, aiReading);
     return Response.json(
       { draft },
       {
