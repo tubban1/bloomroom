@@ -276,30 +276,6 @@ export default function GardenModal({
                       )}
                     </div>
                     <div className="garden-card-body">
-                      {editingDraftId === draft.id ? (
-                        <form className="garden-rename-form" onSubmit={(e) => handleSaveRename(draft, e)}>
-                          <input
-                            type="text"
-                            value={editTitle}
-                            onChange={(e) => setEditTitle(e.target.value)}
-                            maxLength={64}
-                            autoFocus
-                            onBlur={(e) => handleSaveRename(draft, e)}
-                          />
-                        </form>
-                      ) : (
-                        <div className="garden-card-title-row">
-                          <h3 title={draft.title}>{draft.title}</h3>
-                          <button
-                            type="button"
-                            className="garden-inline-rename"
-                            onClick={(e) => handleStartRename(draft, e)}
-                            title={t(language, "rename")}
-                          >
-                            <Edit3 size={13} />
-                          </button>
-                        </div>
-                      )}
                       <span className="garden-card-date">{formatDate(draft.updated_at)}</span>
                       <div className="garden-card-actions">
                         <button
@@ -348,38 +324,6 @@ export default function GardenModal({
                     </div>
 
                     <div className="garden-card-body">
-                      {editingCreationId === c.id ? (
-                        <form
-                          onSubmit={(e) => handleSaveCreationRename(c, e)}
-                          className="garden-rename-form"
-                        >
-                          <input
-                            type="text"
-                            value={editCreationTitle}
-                            onChange={(e) => setEditCreationTitle(e.target.value)}
-                            autoFocus
-                            maxLength={64}
-                          />
-                          <button type="submit" className="garden-rename-save">✓</button>
-                        </form>
-                      ) : (
-                        <div className="garden-title-row">
-                          <h3 title={c.title}>{c.title}</h3>
-                          <button
-                            type="button"
-                            className="garden-icon-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingCreationId(c.id);
-                              setEditCreationTitle(c.title);
-                            }}
-                            title={t(language, "rename")}
-                          >
-                            <Edit3 size={13} />
-                          </button>
-                        </div>
-                      )}
-
                       <div className="garden-creation-meta-row">
                         <span className="garden-card-date">{formatDate(c.published_at)}</span>
                         {c.like_count > 0 && (

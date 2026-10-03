@@ -207,8 +207,8 @@ export async function getGalleryCreations({
 
   const items: CreationCard[] = result.rows.map((row) => ({
     id: row.id,
-    title: row.title || "未命名花束",
-    author_name: row.author_username || "匿名花友",
+    title: row.title || "",
+    author_name: row.author_username || "",
     is_owner: Boolean(viewerUserId && row.owner_user_id === viewerUserId),
     like_count: Math.max(0, row.like_count || 0),
     liked: Boolean(row.liked),
@@ -302,8 +302,8 @@ export async function getCreationDetail(
 
   return {
     id: row.id,
-    title: row.title || "未命名花束",
-    author_name: row.author_username || "匿名花友",
+    title: row.title || "",
+    author_name: row.author_username || "",
     is_owner: isOwner,
     visibility: row.visibility,
     like_count: Math.max(0, row.like_count || 0),

@@ -3358,7 +3358,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid #7a8965; outline-
 .gallery-detail-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: 20px;
   gap: 12px;
 }

@@ -278,7 +278,7 @@ export default function GalleryModal({
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={item.image_url}
-                        alt={item.title}
+                        alt=""
                         loading="lazy"
                         className="gallery-card-thumb"
                       />
@@ -295,9 +295,10 @@ export default function GalleryModal({
                     </div>
 
                     <div className="gallery-card-meta">
-                      <h4 className="gallery-card-title">{item.title}</h4>
                       <div className="gallery-card-sub">
-                        <span className="gallery-card-author">{item.author_name}</span>
+                        {item.author_name && item.author_name !== "匿名花友" && item.author_name !== t(language, "anonymousFlorist") ? (
+                          <span className="gallery-card-author">{item.author_name}</span>
+                        ) : null}
                         <span className="gallery-card-date">{formatPublishDate(item.published_at)}</span>
                       </div>
                     </div>
@@ -340,7 +341,7 @@ export default function GalleryModal({
             className="gallery-detail-overlay"
             role="dialog"
             aria-modal="true"
-            aria-label={selectedItem.title}
+            aria-label={t(language, "galleryTitle")}
           >
             <div className="gallery-detail-card">
               <button
@@ -356,7 +357,7 @@ export default function GalleryModal({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={selectedItem.image_url}
-                  alt={selectedItem.title}
+                  alt=""
                   className="gallery-detail-img"
                 />
               </div>
@@ -364,9 +365,10 @@ export default function GalleryModal({
               <div className="gallery-detail-info">
                 <div className="gallery-detail-header">
                   <div>
-                    <h3 className="gallery-detail-title">{selectedItem.title}</h3>
                     <p className="gallery-detail-author">
-                      {selectedItem.author_name} · {formatPublishDate(selectedItem.published_at)}
+                      {selectedItem.author_name && selectedItem.author_name !== "匿名花友" && selectedItem.author_name !== t(language, "anonymousFlorist")
+                        ? `${selectedItem.author_name} · ${formatPublishDate(selectedItem.published_at)}`
+                        : formatPublishDate(selectedItem.published_at)}
                     </p>
                   </div>
 

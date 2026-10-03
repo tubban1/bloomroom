@@ -2408,7 +2408,7 @@ export default function FlowerStudio() {
       wind,
     );
 
-    const draftTitle = activeDraftTitle || `${flowerName(language, stems[0].kind)} · ${t(language, "myGarden")}`;
+    const draftTitle = "";
 
     let matchingAiReading: AiReading | null = currentAiReading;
     if (!matchingAiReading) {
@@ -2583,7 +2583,7 @@ export default function FlowerStudio() {
     setActiveDraftId(null);
     setActiveDraftVersion(1);
     finishedCreation.current = null;
-    setActiveDraftTitle(toName ? `${toName} · ${t(language, "remixCopy")}` : t(language, "untitledBouquet"));
+    setActiveDraftTitle("");
     setSelectedId(null);
     setHeld(null);
     setToast(t(language, "restored"));
@@ -2618,7 +2618,7 @@ export default function FlowerStudio() {
     setActiveDraftId(null);
     setActiveDraftVersion(1);
     finishedCreation.current = null;
-    setActiveDraftTitle(originalTitle ? `${originalTitle} · ${t(language, "remixCopy")}` : t(language, "untitledBouquet"));
+    setActiveDraftTitle("");
     setSelectedId(null);
     setHeld(null);
     setToast(t(language, "restored"));
