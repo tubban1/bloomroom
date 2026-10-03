@@ -1,5 +1,5 @@
 import { getDatabasePool } from "../lib/db";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
 
 const FLOWER_NAMES: Record<string, string> = {
   rose: "玫瑰",
@@ -107,7 +107,7 @@ async function run() {
     }
 
     const title = generateTitleFromBouquet(decoded);
-    const creationId = uuidv4();
+    const creationId = randomUUID();
 
     // Insert into bloomroom.creations
     await pool.query(
