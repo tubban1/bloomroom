@@ -58,10 +58,12 @@ export async function PUT(
     }
 
     const body = JSON.parse(raw) as Record<string, unknown>;
-    const title = typeof body.title === "string" ? body.title : "未命名花束";
-    const bouquetData = body.bouquet_data && typeof body.bouquet_data === "object"
-      ? (body.bouquet_data as Record<string, unknown>)
-      : {};
+    const title = typeof body.title === "string" ? body.title : undefined;
+    if (body.bouquet_data !== undefined && (!body.bouquet_data || typeof body.bouquet_data !== "object"
+      || !Array.isArray((body.bouquet_data as Record<string, unknown>).stems))) {
+      return Response.json({ error: "Invalid bouquet data." }, { status: 400 });
+    }
+    const bouquetData = body.bouquet_data as Record<string, unknown> | undefined;
     const previewImage = typeof body.preview_image === "string" ? body.preview_image : undefined;
     const version = typeof body.version === "number" ? body.version : undefined;
     const aiReading = body.ai_reading !== undefined

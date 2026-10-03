@@ -22,7 +22,7 @@ type Props = {
   onClose: () => void;
   language: Language;
   currentUser?: SafeUser | null;
-  onRemixCreation: (bouquetData: any, title?: string) => void;
+  onRemixCreation: (bouquetData: unknown, title?: string) => boolean | void;
   onView3dBouquet?: (bouquetData: any, title?: string) => void;
 };
 
@@ -172,7 +172,7 @@ export default function GalleryModal({
   };
 
   const handleRemix = (targetDetail: CreationDetail) => {
-    onRemixCreation(targetDetail.bouquet_data, targetDetail.title);
+    if (onRemixCreation(targetDetail.bouquet_data, targetDetail.title) === false) return;
     handleCloseDetail();
     onClose();
   };

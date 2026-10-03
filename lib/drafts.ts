@@ -189,14 +189,14 @@ export async function getDraftDetail(draftId: string, userId: string): Promise<D
 export async function updateDraft(
   draftId: string,
   userId: string,
-  title: string,
-  bouquetData: Record<string, unknown>,
+  title: string | undefined,
+  bouquetData: Record<string, unknown> | undefined,
   previewImage: string | null | undefined,
   expectedVersion?: number,
   aiReading?: Record<string, unknown> | null,
 ): Promise<{ draft?: DraftSummary; conflict?: boolean; notFound?: boolean }> {
   const db = getDatabasePool();
-  const safeTitle = (title || "未命名花束").trim().slice(0, 64);
+  const safeTitle = title === undefined ? null : title.trim().slice(0, 64);
   const safePreview = previewImage && previewImage.length <= 600000 ? previewImage : null;
   const safeAiReading = aiReading !== undefined ? (aiReading ? JSON.stringify(aiReading) : null) : undefined;
 
@@ -210,15 +210,15 @@ export async function updateDraft(
       updated_at: Date;
     }>(
       `UPDATE bloomroom.drafts
-       SET title = $3,
-           bouquet_data = $4,
+       SET title = COALESCE($3::text, title),
+           bouquet_data = COALESCE($4::jsonb, bouquet_data),
            preview_image = CASE WHEN $5::text IS NOT NULL THEN $5 ELSE preview_image END,
            ai_reading = CASE WHEN $7::jsonb IS NOT NULL THEN $7::jsonb ELSE ai_reading END,
            version = version + 1,
            updated_at = now()
        WHERE id = $1 AND user_id = $2 AND version = $6
        RETURNING id, title, preview_image, version, created_at, updated_at`,
-      [draftId, userId, safeTitle, JSON.stringify(bouquetData), safePreview, expectedVersion, safeAiReading],
+      [draftId, userId, safeTitle, bouquetData === undefined ? null : JSON.stringify(bouquetData), safePreview, expectedVersion, safeAiReading],
     );
 
     if (res.rows.length > 0) {
@@ -257,15 +257,15 @@ export async function updateDraft(
     updated_at: Date;
   }>(
     `UPDATE bloomroom.drafts
-     SET title = $3,
-         bouquet_data = $4,
+     SET title = COALESCE($3::text, title),
+         bouquet_data = COALESCE($4::jsonb, bouquet_data),
          preview_image = CASE WHEN $5::text IS NOT NULL THEN $5 ELSE preview_image END,
          ai_reading = CASE WHEN $6::jsonb IS NOT NULL THEN $6::jsonb ELSE ai_reading END,
          version = version + 1,
          updated_at = now()
      WHERE id = $1 AND user_id = $2
      RETURNING id, title, preview_image, version, created_at, updated_at`,
-    [draftId, userId, safeTitle, JSON.stringify(bouquetData), safePreview, safeAiReading],
+    [draftId, userId, safeTitle, bouquetData === undefined ? null : JSON.stringify(bouquetData), safePreview, safeAiReading],
   );
 
   if (res.rows.length === 0) return { notFound: true };

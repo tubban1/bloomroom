@@ -11,9 +11,9 @@ type Props = {
   onClose: () => void;
   language: Language;
   user: SafeUser | null;
-  onLoadDraft: (draftId: string) => void;
-  onRemixPostcard: (bouquetString: string, toName: string) => void;
-  onRemixCreation?: (bouquetData: Record<string, unknown>, title: string) => void;
+  onLoadDraft: (draftId: string) => Promise<boolean>;
+  onRemixPostcard: (bouquetString: string, toName: string) => boolean;
+  onRemixCreation?: (bouquetData: Record<string, unknown>, title: string) => boolean;
   onDraftDeleted?: (draftId: string) => void;
 };
 
@@ -39,6 +39,7 @@ export default function GardenModal({
     image_url: string;
   }>>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editingCreationId, setEditingCreationId] = useState<string | null>(null);
@@ -180,16 +181,22 @@ export default function GardenModal({
   };
 
   const handleRemixCreationItem = async (creationId: string, title: string) => {
+    setLoadError(false);
     try {
       const res = await fetch(`/api/creations/${creationId}`);
-      if (res.ok) {
-        const data = (await res.json()) as { creation: { bouquet_data: Record<string, unknown> } };
-        onRemixCreation?.(data.creation.bouquet_data, title);
-        onClose();
-      }
+      if (!res.ok) throw new Error("Could not load bouquet");
+      const data = (await res.json()) as { creation: { bouquet_data: Record<string, unknown> } };
+      if (!onRemixCreation?.(data.creation.bouquet_data, title)) throw new Error("Invalid bouquet");
+      onClose();
     } catch {
-      // Ignored
+      setLoadError(true);
     }
+  };
+
+  const handleLoadDraftItem = async (id: string) => {
+    setLoadError(false);
+    if (await onLoadDraft(id)) onClose();
+    else setLoadError(true);
   };
 
   const formatDate = (isoStr: string) => {
@@ -252,6 +259,7 @@ export default function GardenModal({
         </div>
 
         <div className="garden-content">
+          {loadError && <p role="alert">{t(language, "loadBouquetError")}</p>}
           {loading ? (
             <div className="garden-empty-state">
               <p>{t(language, "loading")}</p>
@@ -266,7 +274,7 @@ export default function GardenModal({
               <div className="garden-grid">
                 {drafts.map((draft) => (
                   <article key={draft.id} className="garden-card draft-card">
-                    <div className="garden-card-preview" onClick={() => { onLoadDraft(draft.id); onClose(); }}>
+                    <div className="garden-card-preview" onClick={() => handleLoadDraftItem(draft.id)}>
                       {draft.preview_image ? (
                         <img src={draft.preview_image} alt={draft.title} />
                       ) : (
@@ -281,7 +289,7 @@ export default function GardenModal({
                         <button
                           type="button"
                           className="garden-action-primary"
-                          onClick={() => { onLoadDraft(draft.id); onClose(); }}
+                          onClick={() => handleLoadDraftItem(draft.id)}
                         >
                           <span>{t(language, "continueEdit")}</span>
                           <ArrowRight size={13} />
@@ -388,7 +396,7 @@ export default function GardenModal({
                       <button
                         type="button"
                         className="garden-action-primary"
-                        onClick={() => { onRemixPostcard(pc.bouquet, pc.to_name); onClose(); }}
+                        onClick={() => { if (onRemixPostcard(pc.bouquet, pc.to_name)) onClose(); else setLoadError(true); }}
                         title={t(language, "remixCopy")}
                       >
                         <span>{t(language, "remixCopy")}</span>

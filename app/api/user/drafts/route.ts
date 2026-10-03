@@ -28,9 +28,11 @@ export async function POST(request: Request) {
 
     const body = JSON.parse(raw) as Record<string, unknown>;
     const title = typeof body.title === "string" ? body.title : "未命名花束";
-    const bouquetData = body.bouquet_data && typeof body.bouquet_data === "object"
-      ? (body.bouquet_data as Record<string, unknown>)
-      : {};
+    if (!body.bouquet_data || typeof body.bouquet_data !== "object"
+      || !Array.isArray((body.bouquet_data as Record<string, unknown>).stems)) {
+      return Response.json({ error: "Invalid bouquet data." }, { status: 400 });
+    }
+    const bouquetData = body.bouquet_data as Record<string, unknown>;
     const previewImage = typeof body.preview_image === "string" ? body.preview_image : null;
     const customId = typeof body.id === "string" ? body.id : undefined;
     const aiReading = body.ai_reading && typeof body.ai_reading === "object"

@@ -1836,8 +1836,14 @@ function decodeBouquet(value: string): {
   }
 }
 
-function parseBouquetData(value: string | Record<string, unknown>) {
-  if (typeof value === "string") return decodeBouquet(value);
+function parseBouquetData(value: string | Record<string, unknown>): ReturnType<typeof decodeBouquet> {
+  if (typeof value === "string") {
+    try {
+      return parseBouquetData(JSON.parse(value));
+    } catch {
+      return decodeBouquet(value);
+    }
+  }
   try {
     const raw = encodeURIComponent(JSON.stringify(value));
     const base64 = btoa(raw).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
@@ -2569,17 +2575,25 @@ export default function FlowerStudio() {
       setActiveDraftId(data.draft.id);
       setActiveDraftVersion(data.draft.version);
       setActiveDraftTitle(data.draft.title);
+      finishedCreation.current = null;
+      setFinishOpen(false);
+      setMobilePostcardOpen(false);
       setSelectedId(null);
       setHeld(null);
       setToast(t(language, "draftLoaded"));
+      return true;
     } catch {
-      setToast(t(language, "savingError"));
+      setToast(t(language, "loadBouquetError"));
+      return false;
     }
   };
 
   const handleRemixPostcard = (bouquetString: string, toName: string) => {
     const parsed = decodeBouquet(bouquetString);
-    if (!parsed) return;
+    if (!parsed) {
+      setToast(t(language, "loadBouquetError"));
+      return false;
+    }
     checkpoint();
     setStems(parsed.stems);
     setBouquetRotation(parsed.rotation);
@@ -2598,22 +2612,20 @@ export default function FlowerStudio() {
     setActiveDraftTitle("");
     setSelectedId(null);
     setHeld(null);
+    setFinishOpen(false);
+    setMobilePostcardOpen(false);
+    setCurrentAiReading(null);
     setToast(t(language, "restored"));
+    return true;
   };
 
   const handleRemixCreation = (bouquetData: unknown, originalTitle?: string) => {
-    let parsed: any = null;
-    if (typeof bouquetData === "string") {
-      try {
-        parsed = JSON.parse(bouquetData);
-      } catch {
-        parsed = decodeBouquet(bouquetData);
-      }
-    } else if (typeof bouquetData === "object" && bouquetData !== null) {
-      parsed = bouquetData;
+    const parsed = typeof bouquetData === "string" || (typeof bouquetData === "object" && bouquetData !== null)
+      ? parseBouquetData(bouquetData as string | Record<string, unknown>) : null;
+    if (!parsed) {
+      setToast(t(language, "loadBouquetError"));
+      return false;
     }
-
-    if (!parsed || !Array.isArray(parsed.stems)) return;
 
     checkpoint();
     setStems(parsed.stems);
@@ -2633,7 +2645,11 @@ export default function FlowerStudio() {
     setActiveDraftTitle("");
     setSelectedId(null);
     setHeld(null);
+    setFinishOpen(false);
+    setMobilePostcardOpen(false);
+    setCurrentAiReading(null);
     setToast(t(language, "restored"));
+    return true;
   };
 
   const startOver = () => {
