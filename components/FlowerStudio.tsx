@@ -13,6 +13,8 @@ import {
   Compass,
   Copy,
   Download,
+  Flower2,
+  Globe,
   LogOut,
   RotateCcw,
   Undo2,
@@ -2898,86 +2900,95 @@ export default function FlowerStudio() {
 
         <div className="top-actions">
           <span className="stem-count" aria-live="polite">{stems.length} / 24 {t(language, "stems")}</span>
-          <select className="language-select" aria-label={t(language, "language")} value={language} onChange={(event) => changeLanguage(event.target.value as Language)}>
-            {LANGUAGES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-          </select>
-          <button className="icon-button" aria-label={t(language, "undo")} title={`${t(language, "undo")} (⌘/Ctrl Z)`} disabled={!historyState.undo} onClick={undo}><Undo2 size={15} /></button>
-          <button className="icon-button" aria-label={t(language, "redo")} title={`${t(language, "redo")} (⌘/Ctrl Shift Z)`} disabled={!historyState.redo} onClick={redo}><Redo2 size={15} /></button>
-          <button
-            className="icon-button start-over-button"
-            type="button"
-            aria-label={t(language, "startOver")}
-            title={t(language, "startOver")}
-            onClick={startOver}
-          >
-            <RotateCcw size={15} strokeWidth={1.5} />
-          </button>
-          <button
-            className="gallery-nav-button"
-            type="button"
-            aria-label={t(language, "gallery")}
-            title={t(language, "gallery")}
-            onClick={() => setGalleryModalOpen(true)}
-          >
-            <Compass size={14} />
-            <span>{t(language, "gallery")}</span>
-          </button>
-          <button
-            className="save-draft-button"
-            type="button"
-            aria-label={t(language, "saveDraft")}
-            title={t(language, "saveDraft")}
-            onClick={handleSaveDraft}
-            disabled={savingDraft || stems.length === 0}
-          >
-            <Bookmark size={14} />
-            <span>{savingDraft ? t(language, "savingDraft") : t(language, "saveDraft")}</span>
-          </button>
-          <button
-            className="finish-button"
-            disabled={!stems.length}
-            type="button"
-            onClick={openFinish}
-          >
-            {t(language, "finish")}
-          </button>
-          {user ? (
-            <div className="user-nav">
-              <button
-                className="user-garden-button"
-                type="button"
-                onClick={() => setGardenModalOpen(true)}
-                title={t(language, "myGarden")}
-              >
-                🌿 {t(language, "myGarden")}
-              </button>
-              <span className="user-badge" title={user.username}>
-                {user.username}
-              </span>
-              <button
-                className="icon-button logout-button"
-                type="button"
-                aria-label={t(language, "logout")}
-                title={t(language, "logout")}
-                onClick={handleLogout}
-              >
-                <LogOut size={14} />
-              </button>
-            </div>
-          ) : (
+          <div className="studio-edit-actions">
+            <button className="icon-button" aria-label={t(language, "undo")} title={`${t(language, "undo")} (⌘/Ctrl Z)`} disabled={!historyState.undo} onClick={undo}><Undo2 size={15} /></button>
+            <button className="icon-button" aria-label={t(language, "redo")} title={`${t(language, "redo")} (⌘/Ctrl Shift Z)`} disabled={!historyState.redo} onClick={redo}><Redo2 size={15} /></button>
             <button
-              className="icon-button login-button"
+              className="icon-button start-over-button"
               type="button"
-              aria-label={t(language, "login")}
-              title={t(language, "login")}
-              onClick={() => {
-                setAuthPromptReason("");
-                setAuthModalOpen(true);
-              }}
+              aria-label={t(language, "startOver")}
+              title={t(language, "startOver")}
+              onClick={startOver}
             >
-              <UserIcon size={15} strokeWidth={1.5} />
+              <RotateCcw size={15} strokeWidth={1.5} />
             </button>
-          )}
+            <button
+              className="save-draft-button"
+              type="button"
+              aria-label={t(language, "saveDraft")}
+              title={t(language, "saveDraft")}
+              onClick={handleSaveDraft}
+              disabled={savingDraft || stems.length === 0}
+            >
+              <Bookmark size={14} />
+              <span>{savingDraft ? t(language, "savingDraft") : t(language, "saveDraft")}</span>
+            </button>
+            <button
+              className="finish-button"
+              disabled={!stems.length}
+              type="button"
+              onClick={openFinish}
+            >
+              {t(language, "finish")}
+            </button>
+          </div>
+          <div className="top-navigation">
+            <label className="language-picker" title={t(language, "language")}>
+              <Globe size={18} aria-hidden="true" />
+              <select className="language-select" aria-label={t(language, "language")} value={language} onChange={(event) => changeLanguage(event.target.value as Language)}>
+                {LANGUAGES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+              </select>
+            </label>
+            <button
+              className="gallery-nav-button"
+              type="button"
+              aria-label={t(language, "gallery")}
+              title={t(language, "gallery")}
+              onClick={() => setGalleryModalOpen(true)}
+            >
+              <Compass size={16} />
+              <span>{t(language, "gallery")}</span>
+            </button>
+            {user ? (
+              <div className="user-nav">
+                <button
+                  className="user-garden-button"
+                  type="button"
+                  aria-label={t(language, "myGarden")}
+                  onClick={() => setGardenModalOpen(true)}
+                  title={t(language, "myGarden")}
+                >
+                  <Flower2 size={18} aria-hidden="true" />
+                  <span>{t(language, "myGarden")}</span>
+                </button>
+                <span className="user-badge" title={user.username}>
+                  {user.username}
+                </span>
+                <button
+                  className="icon-button logout-button"
+                  type="button"
+                  aria-label={t(language, "logout")}
+                  title={t(language, "logout")}
+                  onClick={handleLogout}
+                >
+                  <LogOut size={14} />
+                </button>
+              </div>
+            ) : (
+              <button
+                className="icon-button login-button"
+                type="button"
+                aria-label={t(language, "login")}
+                title={t(language, "login")}
+                onClick={() => {
+                  setAuthPromptReason("");
+                  setAuthModalOpen(true);
+                }}
+              >
+                <UserIcon size={15} strokeWidth={1.5} />
+              </button>
+            )}
+          </div>
         </div>
       </header>
 

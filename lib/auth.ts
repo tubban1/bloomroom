@@ -118,8 +118,8 @@ export async function registerUser(usernameRaw: string, passwordRaw: string): Pr
     throw new Error("Username must be between 3 and 32 characters, using letters, numbers, or underscores.");
   }
 
-  if (passwordRaw.length < 6 || passwordRaw.length > 128) {
-    throw new Error("Password must be between 6 and 128 characters long.");
+  if (!passwordRaw) {
+    throw new Error("Please enter a password.");
   }
 
   const salt = randomBytes(32).toString("hex");

@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { generateAiReading, BouquetDataInput } from "@/lib/ai-reading";
+import { flowerName } from "@/lib/translations";
 
 export const runtime = "nodejs";
 
@@ -79,7 +80,9 @@ export async function POST(request: NextRequest) {
     }
 
     const bouquetData = body.bouquetData as BouquetDataInput;
-    if (!bouquetData || !Array.isArray(bouquetData.stems) || bouquetData.stems.length === 0) {
+    if (!bouquetData || !Array.isArray(bouquetData.stems) || bouquetData.stems.length === 0 || bouquetData.stems.length > 24
+      || bouquetData.stems.some((stem) => !stem || typeof stem.kind !== "string"
+        || typeof flowerName("en", stem.kind as Parameters<typeof flowerName>[1]) !== "string")) {
       return Response.json(
         { error: "花束中暂无花材，请先插上鲜花。" },
         { status: 400, headers: { "Cache-Control": "private, no-cache, no-store" } },

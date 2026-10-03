@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { backdropName, flowerName, vesselName, type Language } from "./translations";
 
 export type AiReading = {
   title: string;
@@ -21,6 +22,9 @@ export type StemSummary = {
   z?: number;
   height?: number;
   colorVariant?: string;
+  leanX?: number;
+  leanZ?: number;
+  visualScale?: number;
 };
 
 export type BouquetDataInput = {
@@ -35,7 +39,7 @@ export type BouquetDataInput = {
   version?: number;
 };
 
-export const PROMPT_VERSION = "v2.0";
+export const PROMPT_VERSION = "v2.1";
 
 /**
  * Normalizes reading display fields across new schema and legacy schema.
@@ -110,28 +114,42 @@ export function computeBouquetFingerprint(data: BouquetDataInput | null | undefi
 /**
  * Generates descriptive metadata about the bouquet for the AI prompt.
  */
-function summarizeBouquet(data: BouquetDataInput, language: string): string {
-  const counts: Record<string, number> = {};
+export function summarizeBouquet(data: BouquetDataInput, language: Language): string {
+  const counts = new Map<string, number>();
   for (const stem of data.stems || []) {
-    const key = stem.kind || "flower";
-    counts[key] = (counts[key] || 0) + 1;
+    counts.set(stem.kind, (counts.get(stem.kind) || 0) + 1);
   }
-
-  const stemList = Object.entries(counts)
-    .map(([kind, count]) => `${kind} x${count}`)
-    .join(", ");
-
-  const vessel = data.vessel || "classic";
-  const backdrop = data.backdrop || "linen";
-  const lightWarmth = data.lightWarmth ?? 0;
-
-  return `Flower components: [${stemList || "none"}], Vessel style: ${vessel}, Backdrop: ${backdrop}, Lighting warmth: ${lightWarmth}`;
+  const nameOf = (kind: string, lang: Language) => {
+    const name = flowerName(lang, kind as Parameters<typeof flowerName>[1]);
+    return typeof name === "string" ? name : "Unknown flower material";
+  };
+  const finite = (value: number | undefined) => typeof value === "number" && Number.isFinite(value) ? value : null;
+  return JSON.stringify({
+    actualMaterials: [...counts].map(([kind, count]) => ({
+      name: nameOf(kind, language),
+      englishName: nameOf(kind, "en"),
+      chineseName: nameOf(kind, "zh"),
+      count,
+    })),
+    stemLayout: data.stems.map((stem) => ({
+      name: nameOf(stem.kind, language),
+      colorVariant: typeof stem.colorVariant === "string" && /^[a-z0-9_-]{1,64}$/i.test(stem.colorVariant) ? stem.colorVariant : null,
+      x: finite(stem.x), z: finite(stem.z), height: finite(stem.height),
+      leanX: finite(stem.leanX), leanZ: finite(stem.leanZ), visualScale: finite(stem.visualScale),
+    })),
+    vessel: vesselName(language, (data.vessel || "classic") as Parameters<typeof vesselName>[1]) || "Unknown vessel",
+    backdrop: backdropName(language, (data.backdrop || "linen") as Parameters<typeof backdropName>[1]) || "Unknown backdrop",
+    vesselColor: typeof data.vesselColor === "string" && /^#[0-9a-f]{3,8}$/i.test(data.vesselColor) ? data.vesselColor : null,
+    lightingWarmth: finite(data.lightWarmth),
+    lightingDirection: finite(data.lightDirection),
+  });
 }
 
 const SYSTEM_PROMPT_BASE = `你是一位洞察敏锐、语言生动真实的花艺观察者，擅长通过花束的视觉细节进行“创作式心理联想”。
 你将观察用户的插花作品（包括花朵的色彩、疏密、留白、对称性、枝条姿态与角度、器皿质感以及光影氛围），给出有洞察力、不落俗套的心理联想解读。
 
 【核心原则与文案要求】
+0. 花材身份以结构化数据 actualMaterials 为准：其中名称和数量是作品实际使用的花材，不需要从图片重新猜测。图片只补充构图、可见色彩、形态和光影；不得把清单中的花改认成其他品种，也不得提及清单中不存在的花材。叶材、蕨叶与松果不应误称为花朵。不要因遮挡而自行更改数量。品种本身不能证明用户的心理，心理联想仍需依据作品具体布局。
 1. 保持客观与中立：不预设正向或负向，绝不把所有特点都强行解释成优点或廉价赞美。
 2. 真实呈现复杂心理倾向：可以敏锐描述克制、矛盾、纠结、张扬、疏离、防备、秩序感、对失控的焦虑等，也允许同一作品中呈现相互冲突的倾向。
 3. 紧扣具体视觉依据：每个心理联想和判断都必须连接 2–3 个可观察的具体视觉事实（如某根斜伸的枝条、冷色与暖色的对撞、花朵密不透风的聚集或刻意的留白等），坚决避免万能套路或星座算命式的空洞描述。
@@ -187,7 +205,7 @@ Le format de sortie DOIT être un objet JSON strictement valide avec :
 - "punchline": Une formule de chute mémorable, pleine d'esprit ou de détachement (moins de 18 mots).`,
 };
 
-function getPromptLanguage(lang: string): string {
+function getPromptLanguage(lang: string): Language {
   if (lang === "zh" || lang === "en" || lang === "de" || lang === "fr") {
     return lang;
   }
@@ -282,7 +300,7 @@ export async function generateAiReading({
 
     const userText = useImage
       ? `这是插花作品的照片与属性数据：\n${bouquetSummary}\n\n请观察图片中花朵的姿态、色彩分布、疏密留白与整体光影，结合以上属性，按照系统规范进行创作式心理联想，输出符合要求的 JSON。`
-      : `注意：本次由于环境限制未附带照片，仅根据以下结构化插花属性数据解读：\n${bouquetSummary}\n\n请根据给定的花材种类、数量比例、花器质感与光照氛围，客观推演其可能呈现的空间结构与枝条倾向，按照系统规范进行创作式心理联想，输出符合要求的 JSON。切勿声称自己亲眼看到了视觉照片。`;
+      : `注意：本次未附带照片，仅根据以下结构化插花属性数据解读：\n${bouquetSummary}\n\n花材名称与数量以 actualMaterials 为准。只根据已提供的布局、花材比例和光照参数进行创作式心理联想；未提供的颜色、材质或枝条细节不要编造。切勿声称自己亲眼看到了视觉照片。输出符合要求的 JSON。`;
 
     const userContent = useImage && imageDataUrl
       ? [

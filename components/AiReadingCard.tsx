@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Sparkles, Copy, Check, Download, RotateCcw, AlertCircle, Loader2 } from "lucide-react";
 import { t, type Language } from "@/lib/translations";
-import { getReadingDisplayContent, type AiReading, type BouquetDataInput } from "@/lib/ai-reading";
+import { PROMPT_VERSION, getReadingDisplayContent, type AiReading, type BouquetDataInput } from "@/lib/ai-reading";
 
 type Props = {
   language: Language;
@@ -357,7 +357,7 @@ export default function AiReadingCard({
     }
   };
 
-  const isOutdated = reading && reading.fingerprint !== currentFingerprint;
+  const isOutdated = reading && (reading.fingerprint !== currentFingerprint || reading.language !== language || reading.prompt_version !== PROMPT_VERSION);
   const displayData = reading ? getReadingDisplayContent(reading) : null;
 
   return (

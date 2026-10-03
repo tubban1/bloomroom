@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { X, Lock, User as UserIcon, AlertCircle } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { X, Lock, Eye, EyeOff, User as UserIcon, AlertCircle } from "lucide-react";
 import type { SafeUser } from "@/lib/auth";
 import { t, type Language } from "@/lib/translations";
 
@@ -14,6 +14,62 @@ type Props = {
   promptReason?: string;
 };
 
+function PasswordField({ id, label, value, onChange, language, mode }: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  language: Language;
+  mode: "login" | "signup";
+}) {
+  const [visible, setVisible] = useState(false);
+  const [typing, setTyping] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+
+  const mask = () => {
+    if (timer.current) clearTimeout(timer.current);
+    setTyping(false);
+  };
+
+  return (
+    <div className="auth-field">
+      <label className="auth-field-label" htmlFor={id}>{label}</label>
+      <div className="auth-input-wrap auth-password-wrap">
+        <Lock size={15} className="auth-input-icon" aria-hidden="true" />
+        <input
+          id={id}
+          type={visible || typing ? "text" : "password"}
+          autoComplete={mode === "signup" ? "new-password" : "current-password"}
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          value={value}
+          onChange={(event) => {
+            onChange(event.target.value);
+            if (timer.current) clearTimeout(timer.current);
+            setTyping(Boolean(event.target.value));
+            timer.current = setTimeout(() => setTyping(false), 800);
+          }}
+          onBlur={mask}
+          placeholder={t(language, id === "auth-confirm-password" ? "confirmPasswordHint" : "passwordHint")}
+          required
+        />
+        <button
+          className="auth-password-toggle"
+          type="button"
+          aria-label={t(language, visible ? "hidePassword" : "showPassword")}
+          title={t(language, visible ? "hidePassword" : "showPassword")}
+          aria-pressed={visible}
+          onClick={() => { mask(); setVisible(!visible); }}
+        >
+          {visible ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function AuthModal({
   isOpen,
   onClose,
@@ -25,10 +81,46 @@ export default function AuthModal({
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const viewport = window.visualViewport;
+    const updateViewport = () => {
+      overlayRef.current?.style.setProperty("--auth-visible-height", `${viewport?.height ?? window.innerHeight}px`);
+      overlayRef.current?.style.setProperty("--auth-visible-top", `${viewport?.offsetTop ?? 0}px`);
+    };
+    updateViewport();
+    modalRef.current?.focus();
+    viewport?.addEventListener("resize", updateViewport);
+    viewport?.addEventListener("scroll", updateViewport);
+    window.addEventListener("resize", updateViewport);
+    return () => {
+      viewport?.removeEventListener("resize", updateViewport);
+      viewport?.removeEventListener("scroll", updateViewport);
+      window.removeEventListener("resize", updateViewport);
+      previousFocus?.focus();
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
+
+  const closeModal = () => {
+    setPassword("");
+    setConfirmPassword("");
+    setError("");
+    onClose();
+  };
+  const switchMode = (next: "login" | "signup") => {
+    setMode(next);
+    setConfirmPassword("");
+    setError("");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,8 +132,8 @@ export default function AuthModal({
       return;
     }
 
-    if (password.length < 6) {
-      setError(t(language, "passwordHint"));
+    if (mode === "signup" && password !== confirmPassword) {
+      setError(t(language, "passwordMismatch"));
       return;
     }
 
@@ -51,7 +143,7 @@ export default function AuthModal({
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: cleanUser, password }),
+        body: JSON.stringify({ username: cleanUser, password, ...(mode === "signup" ? { confirmPassword } : {}) }),
       });
 
       const data = (await res.json()) as { user?: SafeUser; error?: string };
@@ -61,7 +153,7 @@ export default function AuthModal({
       }
 
       onSuccess(data.user);
-      onClose();
+      closeModal();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Authentication error.");
     } finally {
@@ -70,12 +162,33 @@ export default function AuthModal({
   };
 
   return (
-    <div className="auth-overlay" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="auth-modal" onClick={(e) => e.stopPropagation()}>
+    <div ref={overlayRef} className="auth-overlay" onClick={closeModal}>
+      <div
+        ref={modalRef}
+        className="auth-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auth-title"
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") { event.stopPropagation(); closeModal(); }
+          if (event.key !== "Tab") return;
+          const controls = modalRef.current?.querySelectorAll<HTMLElement>("button:not(:disabled), input:not(:disabled)");
+          if (!controls?.length) return;
+          const first = controls[0];
+          const last = controls[controls.length - 1];
+          if (event.shiftKey && (document.activeElement === first || document.activeElement === modalRef.current)) {
+            event.preventDefault(); last.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault(); first.focus();
+          }
+        }}
+      >
         <button
           className="auth-close"
           type="button"
-          onClick={onClose}
+          onClick={closeModal}
           aria-label={t(language, "close")}
         >
           <X size={18} />
@@ -83,22 +196,24 @@ export default function AuthModal({
 
         <div className="auth-header">
           <div className="auth-mark">B</div>
-          <h2>{mode === "login" ? t(language, "login") : t(language, "signup")}</h2>
+          <h2 id="auth-title">{mode === "login" ? t(language, "login") : t(language, "signup")}</h2>
           {promptReason && <p className="auth-prompt-reason">{promptReason}</p>}
         </div>
 
-        <div className="auth-tabs" role="tablist">
+        <div className="auth-tabs" role="group" aria-label={t(language, "login")}>
           <button
             type="button"
             className={`auth-tab ${mode === "login" ? "active" : ""}`}
-            onClick={() => { setMode("login"); setError(""); }}
+            aria-pressed={mode === "login"}
+            onClick={() => switchMode("login")}
           >
             {t(language, "login")}
           </button>
           <button
             type="button"
             className={`auth-tab ${mode === "signup" ? "active" : ""}`}
-            onClick={() => { setMode("signup"); setError(""); }}
+            aria-pressed={mode === "signup"}
+            onClick={() => switchMode("signup")}
           >
             {t(language, "signup")}
           </button>
@@ -131,24 +246,14 @@ export default function AuthModal({
                 autoCorrect="off"
                 spellCheck={false}
                 required
-                autoFocus
+                autoComplete="username"
+                maxLength={32}
               />
             </div>
           </label>
 
-          <label className="auth-field">
-            <span className="auth-field-label">{t(language, "passwordLabel")}</span>
-            <div className="auth-input-wrap">
-              <Lock size={15} className="auth-input-icon" />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={t(language, "passwordHint")}
-                required
-              />
-            </div>
-          </label>
+          <PasswordField key={`${isOpen}:${mode}`} id="auth-password" label={t(language, "passwordLabel")} value={password} onChange={setPassword} language={language} mode={mode} />
+          {mode === "signup" && <PasswordField id="auth-confirm-password" label={t(language, "confirmPasswordLabel")} value={confirmPassword} onChange={setConfirmPassword} language={language} mode={mode} />}
 
           <button className="auth-submit-button" type="submit" disabled={loading}>
             {loading ? "..." : mode === "login" ? t(language, "login") : t(language, "signup")}
@@ -159,7 +264,7 @@ export default function AuthModal({
               <button
                 type="button"
                 className="auth-link-button"
-                onClick={() => { setMode("signup"); setError(""); }}
+                onClick={() => switchMode("signup")}
               >
                 {t(language, "needAccount")}
               </button>
@@ -167,7 +272,7 @@ export default function AuthModal({
               <button
                 type="button"
                 className="auth-link-button"
-                onClick={() => { setMode("login"); setError(""); }}
+                onClick={() => switchMode("login")}
               >
                 {t(language, "alreadyHaveAccount")}
               </button>

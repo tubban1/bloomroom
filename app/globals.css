@@ -175,15 +175,38 @@ button {
   gap: 8px;
 }
 
-.language-select {
-  min-height: 36px;
-  padding: 0 26px 0 10px;
+.studio-edit-actions,
+.top-navigation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.language-picker {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: rgba(255,255,255,.5);
+  background: rgba(255,255,255,.22);
   color: var(--ink);
-  font: inherit;
-  font-size: 11px;
+}
+
+.language-picker:focus-within {
+  outline: 2px solid #7a8965;
+  outline-offset: 3px;
+}
+
+.language-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
   cursor: pointer;
 }
 
@@ -1381,7 +1404,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid #7a8965; outline-
   .top-actions { gap: 4px; }
   .icon-button { width: 32px; min-height: 34px; }
   .finish-button { padding: 0 12px; font-size: 10px; }
-  .language-select { width: 78px; min-height: 32px; padding: 0 5px 0 8px; font-size: 9px; }
   .hero-copy { left: 16px; top: 18px; max-width: 160px; }
   .hero-copy h1 { font-size: 27px; }
   .hero-copy p { display: none; }
@@ -1630,6 +1652,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid #7a8965; outline-
   .top-actions { flex: 0 0 auto; }
 }
 
+
 @media (max-width: 760px) {
   .finish-overlay {
     position: fixed;
@@ -1770,7 +1793,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid #7a8965; outline-
 /* TOPBAR ACTIONS: Save Draft & User Account                     */
 /* ------------------------------------------------------------- */
 .save-draft-button,
-.garden-button {
+.garden-button,
+.user-garden-button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1864,7 +1888,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid #7a8965; outline-
 /* ------------------------------------------------------------- */
 .auth-overlay {
   position: fixed;
-  inset: 0;
+  inset: var(--auth-visible-top, 0px) 0 auto;
+  height: var(--auth-visible-height, 100dvh);
   z-index: 1000;
   display: grid;
   place-items: center;
@@ -1877,6 +1902,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid #7a8965; outline-
   position: relative;
   width: 100%;
   max-width: 380px;
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
   background: #fbf9f4;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 20px;
@@ -1913,6 +1944,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid #7a8965; outline-
 .auth-header {
   text-align: center;
   margin-bottom: 20px;
+  padding-inline: 24px;
 }
 
 .auth-mark {
@@ -2021,6 +2053,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid #7a8965; outline-
   position: relative;
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 
 .auth-input-icon {
@@ -2032,6 +2065,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid #7a8965; outline-
 
 .auth-input-wrap input {
   width: 100%;
+  min-width: 0;
   min-height: 42px;
   padding: 0 12px 0 36px;
   border: 1px solid #dcd7cc;
@@ -2048,6 +2082,22 @@ button:focus-visible, input:focus-visible { outline: 2px solid #7a8965; outline-
   border-color: #24251f;
   box-shadow: 0 0 0 3px rgba(36, 37, 31, 0.08);
 }
+
+.auth-password-wrap input { padding-right: 48px; }
+.auth-password-toggle {
+  position: absolute;
+  right: 2px;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #777267;
+  cursor: pointer;
+}
+.auth-password-toggle:hover { background: rgba(0, 0, 0, .04); }
 
 .auth-submit-button {
   min-height: 42px;
@@ -3423,4 +3473,108 @@ button:focus-visible, input:focus-visible { outline: 2px solid #7a8965; outline-
   }
 }
 
+/* Compact navigation without removing account or editing actions. */
+@media (max-width: 1100px) {
+  .topbar .stem-count,
+  .topbar .brand-copy > span,
+  .topbar .gallery-nav-button > span,
+  .topbar .save-draft-button > span,
+  .topbar .user-garden-button > span,
+  .topbar .user-badge {
+    display: none;
+  }
+  .topbar .gallery-nav-button,
+  .topbar .save-draft-button,
+  .topbar .user-garden-button {
+    flex: 0 0 40px;
+    width: 40px;
+    min-height: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+}
 
+@media (max-width: 760px) {
+  .topbar {
+    height: calc(112px + env(safe-area-inset-top, 0px));
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 44px 44px;
+    gap: 8px;
+    padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 8px;
+  }
+  .topbar .brand { grid-column: 1; grid-row: 1; min-width: 0; }
+  .topbar .brand-mark { display: none; }
+  .topbar .brand-copy { display: block; }
+  .topbar .brand-copy strong { font-size: 16px; }
+  .top-actions { display: contents; }
+  .top-navigation {
+    grid-column: 2;
+    grid-row: 1;
+    gap: 4px;
+  }
+  .studio-edit-actions {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    gap: 8px;
+  }
+  .topbar .icon-button,
+  .topbar .language-picker,
+  .topbar .gallery-nav-button,
+  .topbar .save-draft-button,
+  .topbar .user-garden-button {
+    display: grid;
+    place-items: center;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0;
+  }
+  .topbar .start-over-button { display: none; }
+  .topbar .user-nav { gap: 4px; }
+  .topbar .finish-button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+    padding: 8px 12px;
+    font-size: 12px;
+    letter-spacing: .03em;
+    overflow-wrap: anywhere;
+  }
+  .workspace { top: calc(112px + env(safe-area-inset-top, 0px)); }
+
+  .auth-overlay,
+  .garden-overlay,
+  .gallery-modal-overlay,
+  .gallery-detail-overlay {
+    padding: max(12px, env(safe-area-inset-top, 0px)) 12px max(12px, env(safe-area-inset-bottom, 0px));
+  }
+  .auth-modal { padding: 22px 18px; border-radius: 16px; }
+  .auth-modal:focus { outline: none; }
+  .auth-close { top: 12px; right: 12px; width: 44px; height: 44px; }
+  .auth-tab,
+  .auth-submit-button { min-height: 44px; padding: 8px; }
+  .auth-input-wrap input,
+  .garden-rename-form input { min-height: 44px; font-size: 16px; }
+  .auth-link-button { min-height: 44px; line-height: 1.5; }
+  .auth-notice-banner > span { min-width: 0; }
+  .garden-modal,
+  .gallery-modal-container {
+    min-width: 0;
+    max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  }
+  .garden-header { gap: 8px; padding: 16px; }
+  .garden-header-title { min-width: 0; }
+  .garden-header-title h2 { overflow-wrap: anywhere; }
+  .garden-close { flex: 0 0 44px; width: 44px; height: 44px; }
+  .garden-tabs { flex-wrap: wrap; gap: 4px; padding: 8px 12px; }
+  .garden-tab { flex: 1 1 auto; min-height: 44px; padding: 8px; }
+  .garden-content { min-height: 0; padding: 16px; }
+  .garden-card-actions { flex-wrap: wrap; }
+  .gallery-header-left { min-width: 0; }
+  .gallery-subtitle { overflow-wrap: anywhere; }
+  .gallery-header-controls { width: 100%; justify-content: space-between; gap: 8px; }
+  .gallery-sort-tabs { flex: 1; min-width: 0; }
+  .gallery-sort-btn { flex: 1; justify-content: center; min-height: 44px; padding: 8px; }
+}

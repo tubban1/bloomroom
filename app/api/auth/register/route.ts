@@ -17,6 +17,9 @@ export async function POST(request: Request) {
     const body = (await request.json()) as Record<string, unknown>;
     const username = typeof body.username === "string" ? body.username : "";
     const password = typeof body.password === "string" ? body.password : "";
+    if (typeof body.confirmPassword !== "string" || body.confirmPassword !== password) {
+      return Response.json({ error: "Passwords do not match." }, { status: 400 });
+    }
 
     const { user, sessionToken } = await registerUser(username, password);
 
