@@ -68,7 +68,7 @@ def components(part):
   ids=np.where(face_roots==label)[0];v=p[np.unique(faces[ids])];groups.append((ids,v.min(0),v.max(0),v.mean(0)))
  return sorted(groups,key=lambda x:len(x[0]),reverse=True)
 
-def export(parts,path):
+def export(parts,path,texture_size=1024):
  import copy
  out={'asset':{'version':'2.0','generator':'Bloomroom single-unit preparation'},'scene':0,'scenes':[{'nodes':[]}],'nodes':[],'meshes':[],'accessors':[],'bufferViews':[],'buffers':[],'materials':[],'textures':[],'images':[],'samplers':[]};blob=bytearray();textures={};materials={}
  def view(data):
@@ -80,7 +80,7 @@ def export(parts,path):
  def texture(part,i):
   key=(id(part['doc']),i)
   if key in textures:return textures[key]
-  d=part['doc'];t=copy.deepcopy(d['textures'][i]);im=d['images'][t['source']];v=d['bufferViews'][im['bufferView']];off=v.get('byteOffset',0);pil=Image.open(io.BytesIO(part['blob'][off:off+v['byteLength']]));pil.thumbnail((1024,1024));buf=io.BytesIO();alpha='A' in pil.getbands() or 'transparency' in pil.info;pil=pil.convert('RGBA' if alpha else 'RGB');pil.save(buf,format='PNG' if alpha else 'JPEG',quality=90)
+  d=part['doc'];t=copy.deepcopy(d['textures'][i]);im=d['images'][t['source']];v=d['bufferViews'][im['bufferView']];off=v.get('byteOffset',0);pil=Image.open(io.BytesIO(part['blob'][off:off+v['byteLength']]));pil.thumbnail((texture_size,texture_size));buf=io.BytesIO();alpha='A' in pil.getbands() or 'transparency' in pil.info;pil=pil.convert('RGBA' if alpha else 'RGB');pil.save(buf,format='PNG' if alpha else 'JPEG',quality=90)
   t['source']=len(out['images']);out['images'].append({'bufferView':view(buf.getvalue()),'mimeType':'image/png' if alpha else 'image/jpeg'})
   if 'sampler' in t:t['sampler']=len(out['samplers']);out['samplers'].append(copy.deepcopy(d.get('samplers',[{}])[d['textures'][i].get('sampler',0)]))
   idx=len(out['textures']);out['textures'].append(t);textures[key]=idx;return idx

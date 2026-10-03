@@ -1,0 +1,120 @@
+[
+  {
+    "name": "三枝留白",
+    "vessel": "bud",
+    "vesselColor": "#f0ede5",
+    "vesselOpacity": 100,
+    "vesselScale": 1,
+    "rotation": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "stems": [
+      {
+        "kind": "calla-lily",
+        "x": 0,
+        "z": 0,
+        "height": 2.32,
+        "leanX": 0.12,
+        "leanZ": 0,
+        "seed": 0.21,
+        "colorVariant": "natural",
+        "visualScale": 1
+      },
+      {
+        "kind": "calla-lily",
+        "x": -0.035,
+        "z": 0.03,
+        "height": 1.96,
+        "leanX": -0.55,
+        "leanZ": 0.08,
+        "seed": 0.53,
+        "colorVariant": "natural",
+        "visualScale": 1
+      },
+      {
+        "kind": "calla-lily",
+        "x": 0.035,
+        "z": -0.03,
+        "height": 1.61,
+        "leanX": 0.58,
+        "leanZ": -0.08,
+        "seed": 0.79,
+        "colorVariant": "natural",
+        "visualScale": 1
+      }
+    ],
+    "url": "https://flower.fde.fan/?lang=zh&example=calla-1#b=JTdCJTIybmFtZSUyMiUzQSUyMiVFNCVCOCU4OSVFNiU5RSU5RCVFNyU5NSU5OSVFNyU5OSVCRCUyMiUyQyUyMnZlc3NlbCUyMiUzQSUyMmJ1ZCUyMiUyQyUyMnZlc3NlbENvbG9yJTIyJTNBJTIyJTIzZjBlZGU1JTIyJTJDJTIydmVzc2VsT3BhY2l0eSUyMiUzQTEwMCUyQyUyMnZlc3NlbFNjYWxlJTIyJTNBMSUyQyUyMnJvdGF0aW9uJTIyJTNBJTdCJTIyeCUyMiUzQTAlMkMlMjJ5JTIyJTNBMCUyQyUyMnolMjIlM0EwJTdEJTJDJTIyc3RlbXMlMjIlM0ElNUIlN0IlMjJraW5kJTIyJTNBJTIyY2FsbGEtbGlseSUyMiUyQyUyMnglMjIlM0EwJTJDJTIyeiUyMiUzQTAlMkMlMjJoZWlnaHQlMjIlM0EyLjMyJTJDJTIybGVhblglMjIlM0EwLjEyJTJDJTIybGVhblolMjIlM0EwJTJDJTIyc2VlZCUyMiUzQTAuMjElMkMlMjJjb2xvclZhcmlhbnQlMjIlM0ElMjJuYXR1cmFsJTIyJTJDJTIydmlzdWFsU2NhbGUlMjIlM0ExJTdEJTJDJTdCJTIya2luZCUyMiUzQSUyMmNhbGxhLWxpbHklMjIlMkMlMjJ4JTIyJTNBLTAuMDM1JTJDJTIyeiUyMiUzQTAuMDMlMkMlMjJoZWlnaHQlMjIlM0ExLjk2JTJDJTIybGVhblglMjIlM0EtMC41NSUyQyUyMmxlYW5aJTIyJTNBMC4wOCUyQyUyMnNlZWQlMjIlM0EwLjUzJTJDJTIyY29sb3JWYXJpYW50JTIyJTNBJTIybmF0dXJhbCUyMiUyQyUyMnZpc3VhbFNjYWxlJTIyJTNBMSU3RCUyQyU3QiUyMmtpbmQlMjIlM0ElMjJjYWxsYS1saWx5JTIyJTJDJTIyeCUyMiUzQTAuMDM1JTJDJTIyeiUyMiUzQS0wLjAzJTJDJTIyaGVpZ2h0JTIyJTNBMS42MSUyQyUyMmxlYW5YJTIyJTNBMC41OCUyQyUyMmxlYW5aJTIyJTNBLTAuMDglMkMlMjJzZWVkJTIyJTNBMC43OSUyQyUyMmNvbG9yVmFyaWFudCUyMiUzQSUyMm5hdHVyYWwlMjIlMkMlMjJ2aXN1YWxTY2FsZSUyMiUzQTElN0QlNUQlN0Q"
+  },
+  {
+    "name": "五枝纸包",
+    "vessel": "canvas",
+    "vesselColor": "#eee6d6",
+    "vesselOpacity": 100,
+    "vesselScale": 0.9,
+    "rotation": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "stems": [
+      {
+        "kind": "calla-lily",
+        "x": 0,
+        "z": 0.02,
+        "height": 3.15,
+        "leanX": 0.08,
+        "leanZ": 0.04,
+        "seed": 0.21,
+        "colorVariant": "natural",
+        "visualScale": 1
+      },
+      {
+        "kind": "calla-lily",
+        "x": -0.025,
+        "z": 0.01,
+        "height": 2.88,
+        "leanX": -0.5,
+        "leanZ": 0.08,
+        "seed": 0.53,
+        "colorVariant": "natural",
+        "visualScale": 1
+      },
+      {
+        "kind": "calla-lily",
+        "x": 0.025,
+        "z": 0,
+        "height": 2.77,
+        "leanX": 0.52,
+        "leanZ": 0,
+        "seed": 0.79,
+        "colorVariant": "natural",
+        "visualScale": 1
+      },
+      {
+        "kind": "calla-lily",
+        "x": -0.035,
+        "z": -0.04,
+        "height": 2.57,
+        "leanX": -0.76,
+        "leanZ": -0.08,
+        "seed": 0.37,
+        "colorVariant": "natural",
+        "visualScale": 1
+      },
+      {
+        "kind": "calla-lily",
+        "x": 0.035,
+        "z": -0.04,
+        "height": 2.42,
+        "leanX": 0.73,
+        "leanZ": -0.1,
+        "seed": 0.93,
+        "colorVariant": "natural",
+        "visualScale": 1
+      }
+    ],
+    "url": "https://flower.fde.fan/?lang=zh&example=calla-2-raised#b=JTdCJTIybmFtZSUyMiUzQSUyMiVFNCVCQSU5NCVFNiU5RSU5RCVFNyVCQSVCOCVFNSU4QyU4NSUyMiUyQyUyMnZlc3NlbCUyMiUzQSUyMmNhbnZhcyUyMiUyQyUyMnZlc3NlbENvbG9yJTIyJTNBJTIyJTIzZWVlNmQ2JTIyJTJDJTIydmVzc2VsT3BhY2l0eSUyMiUzQTEwMCUyQyUyMnZlc3NlbFNjYWxlJTIyJTNBMC45JTJDJTIycm90YXRpb24lMjIlM0ElN0IlMjJ4JTIyJTNBMCUyQyUyMnklMjIlM0EwJTJDJTIyeiUyMiUzQTAlN0QlMkMlMjJzdGVtcyUyMiUzQSU1QiU3QiUyMmtpbmQlMjIlM0ElMjJjYWxsYS1saWx5JTIyJTJDJTIyeCUyMiUzQTAlMkMlMjJ6JTIyJTNBMC4wMiUyQyUyMmhlaWdodCUyMiUzQTMuMTUlMkMlMjJsZWFuWCUyMiUzQTAuMDglMkMlMjJsZWFuWiUyMiUzQTAuMDQlMkMlMjJzZWVkJTIyJTNBMC4yMSUyQyUyMmNvbG9yVmFyaWFudCUyMiUzQSUyMm5hdHVyYWwlMjIlMkMlMjJ2aXN1YWxTY2FsZSUyMiUzQTElN0QlMkMlN0IlMjJraW5kJTIyJTNBJTIyY2FsbGEtbGlseSUyMiUyQyUyMnglMjIlM0EtMC4wMjUlMkMlMjJ6JTIyJTNBMC4wMSUyQyUyMmhlaWdodCUyMiUzQTIuODglMkMlMjJsZWFuWCUyMiUzQS0wLjUlMkMlMjJsZWFuWiUyMiUzQTAuMDglMkMlMjJzZWVkJTIyJTNBMC41MyUyQyUyMmNvbG9yVmFyaWFudCUyMiUzQSUyMm5hdHVyYWwlMjIlMkMlMjJ2aXN1YWxTY2FsZSUyMiUzQTElN0QlMkMlN0IlMjJraW5kJTIyJTNBJTIyY2FsbGEtbGlseSUyMiUyQyUyMnglMjIlM0EwLjAyNSUyQyUyMnolMjIlM0EwJTJDJTIyaGVpZ2h0JTIyJTNBMi43NyUyQyUyMmxlYW5YJTIyJTNBMC41MiUyQyUyMmxlYW5aJTIyJTNBMCUyQyUyMnNlZWQlMjIlM0EwLjc5JTJDJTIyY29sb3JWYXJpYW50JTIyJTNBJTIybmF0dXJhbCUyMiUyQyUyMnZpc3VhbFNjYWxlJTIyJTNBMSU3RCUyQyU3QiUyMmtpbmQlMjIlM0ElMjJjYWxsYS1saWx5JTIyJTJDJTIyeCUyMiUzQS0wLjAzNSUyQyUyMnolMjIlM0EtMC4wNCUyQyUyMmhlaWdodCUyMiUzQTIuNTclMkMlMjJsZWFuWCUyMiUzQS0wLjc2JTJDJTIybGVhblolMjIlM0EtMC4wOCUyQyUyMnNlZWQlMjIlM0EwLjM3JTJDJTIyY29sb3JWYXJpYW50JTIyJTNBJTIybmF0dXJhbCUyMiUyQyUyMnZpc3VhbFNjYWxlJTIyJTNBMSU3RCUyQyU3QiUyMmtpbmQlMjIlM0ElMjJjYWxsYS1saWx5JTIyJTJDJTIyeCUyMiUzQTAuMDM1JTJDJTIyeiUyMiUzQS0wLjA0JTJDJTIyaGVpZ2h0JTIyJTNBMi40MiUyQyUyMmxlYW5YJTIyJTNBMC43MyUyQyUyMmxlYW5aJTIyJTNBLTAuMSUyQyUyMnNlZWQlMjIlM0EwLjkzJTJDJTIyY29sb3JWYXJpYW50JTIyJTNBJTIybmF0dXJhbCUyMiUyQyUyMnZpc3VhbFNjYWxlJTIyJTNBMSU3RCU1RCU3RA"
+  }
+]

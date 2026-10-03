@@ -15,7 +15,7 @@
     "authorUrl": "https://sketchfab.com/ra_in_coat",
     "source": "https://sketchfab.com/3d-models/tulip-flower-8b865189c6ca4013a39cb25076241494",
     "license": "http://creativecommons.org/licenses/by/4.0/",
-    "changes": "Flower head extracted, axes and scale normalized; unused meshes and textures removed."
+    "changes": "Flower head extracted and calibrated to 6 cm; disconnected source leaf and unused geometry removed; stem attachment recentered."
   },
   {
     "file": "daisy.glb",
@@ -24,7 +24,7 @@
     "authorUrl": "https://sketchfab.com/lolipop_1707",
     "source": "https://sketchfab.com/3d-models/daisy-models-pack-realistic-optimized-0748471f99f2416a8b66b522c293720f",
     "license": "http://creativecommons.org/licenses/by/4.0/",
-    "changes": "Flower head extracted, axes and scale normalized; unused meshes and textures removed."
+    "changes": "Flower head extracted and calibrated to 8 cm; protruding green fragment and unused geometry removed; stem attachment recentered."
   },
   {
     "file": "poppy.glb",
@@ -42,7 +42,7 @@
     "authorUrl": "https://sketchfab.com/trbaker",
     "source": "https://sketchfab.com/3d-models/gerbera-daisies-b4f61f6c4e764e18aa641da251624e96",
     "license": "http://creativecommons.org/licenses/by/4.0/",
-    "changes": "Complete flower stem retained; textures resized to at most 1024px; axes, scale, and materials normalized at runtime."
+    "changes": "One original gerbera bloom retained from the scanned plant; the studio adds a cut stem. Textures and unused geometry optimized."
   },
   {
     "file": "chrysanthemum.glb",
@@ -51,7 +51,7 @@
     "authorUrl": "https://sketchfab.com/KHS_Asset",
     "source": "https://sketchfab.com/3d-models/chrysanthemum-dbd44831caae4625834665c86e63af25",
     "license": "http://creativecommons.org/licenses/by/4.0/",
-    "changes": "Complete flower stem retained; textures resized to at most 1024px; axes, scale, and materials normalized at runtime."
+    "changes": "One original spray-flowering branch retained; detached source leaves and unused side branch removed while preserving each bloom and cut stem."
   },
   {
     "file": "lily-of-the-valley.glb",
@@ -60,7 +60,7 @@
     "authorUrl": "https://sketchfab.com/sbonser",
     "source": "https://sketchfab.com/3d-models/lily-of-the-valley-7386d332890e4b948b2da4fe573ed98d",
     "license": "http://creativecommons.org/licenses/by/4.0/",
-    "changes": "Complete flower stem retained; textures resized to at most 1024px; axes, scale, and materials normalized at runtime."
+    "changes": "Six original bells joined with one cut stem and pedicels. Textures and unused geometry optimized."
   },
   {
     "file": "fern.glb",
@@ -69,7 +69,7 @@
     "authorUrl": "https://sketchfab.com/SanForge",
     "source": "https://sketchfab.com/3d-models/3d-fern-01-165f3870237f488885faf406d9deddc0",
     "license": "http://creativecommons.org/licenses/by/4.0/",
-    "changes": "Complete fern stem retained; textures resized to at most 1024px; axes, scale, and materials normalized at runtime."
+    "changes": "One frond retained from the original fern clump. Textures and unused geometry optimized."
   },
   {
     "file": "peony.glb",
@@ -87,7 +87,7 @@
     "authorUrl": "https://sketchfab.com/Akiko_NAKAMUR",
     "source": "https://sketchfab.com/3d-models/hydrangea-blue-20220615-69fd19ab6fe545999fa1e71bea910288",
     "license": "http://creativecommons.org/licenses/by/4.0/",
-    "changes": "Photogrammetry bloom retained; textures resized to at most 1024px, materials converted to PBR, and scale normalized for the arrangement."
+    "changes": "Single photogrammetry bloom retained and calibrated to 18 cm; lateral leaf and lower scan debris removed; stem attachment recentered; texture and materials optimized."
   },
   {
     "file": "eucalyptus.glb",
@@ -96,7 +96,7 @@
     "authorUrl": "https://sketchfab.com/newmag2207",
     "source": "https://sketchfab.com/3d-models/eucalyptus-ed7b963343244f2daa7916ac37c05b21",
     "license": "http://creativecommons.org/licenses/by/4.0/",
-    "changes": "One eucalyptus branch extracted from a multi-branch scene; textures resized to at most 1024px, materials converted to PBR, and scale normalized."
+    "changes": "One original eucalyptus sprig retained, anchored at the cut end. Textures and unused geometry optimized."
   },
   {
     "file": "eucalyptus-sprig.glb",
@@ -105,7 +105,7 @@
     "authorUrl": "https://sketchfab.com/newmag2207",
     "source": "https://sketchfab.com/3d-models/eucalyptus-ed7b963343244f2daa7916ac37c05b21",
     "license": "http://creativecommons.org/licenses/by/4.0/",
-    "changes": "A second eucalyptus branch extracted from a multi-branch scene; textures resized to at most 1024px, materials converted to PBR, and scale normalized."
+    "changes": "One original eucalyptus sprig retained, anchored at the cut end. Textures and unused geometry optimized."
   },
   {
     "file": "sunflower.glb",
@@ -114,7 +114,7 @@
     "authorUrl": "https://sketchfab.com/PolygonalMindstudio",
     "source": "https://sketchfab.com/3d-models/569a71ccf4d94c1585c9573521fb998f",
     "license": "http://creativecommons.org/licenses/by/4.0/",
-    "changes": "Complete flower stem retained; textures resized to at most 1024px; materials normalized at runtime."
+    "changes": "One original sunflower head retained; the studio adds a cut stem. Textures and unused geometry optimized."
   },
   {
     "file": "orchid.glb",
@@ -123,7 +123,7 @@
     "authorUrl": "https://sketchfab.com/Rigsters",
     "source": "https://sketchfab.com/3d-models/ed453cd6b12f4dfa8d4f3dcf68c97cf1",
     "license": "http://creativecommons.org/licenses/by/4.0/",
-    "changes": "Photogrammetry orchid stem retained; textures resized to at most 1024px; materials converted to PBR and normalized."
+    "changes": "One original orchid bloom retained; second bloom and bud removed. Textures and unused geometry optimized."
   },
   {
     "file": "calla-lily.glb",
@@ -132,7 +132,7 @@
     "authorUrl": "https://sketchfab.com/TIS",
     "source": "https://sketchfab.com/3d-models/92008b5d9d0c4643bf7de2c5374a8cb3",
     "license": "http://creativecommons.org/licenses/by/4.0/",
-    "changes": "Complete calla lily stem retained; textures resized to at most 1024px; materials normalized at runtime."
+    "changes": "One calla bloom and its stem retained; detached leaves removed. Textures and unused geometry optimized."
   },
   {
     "file": "carnation.glb",
@@ -141,7 +141,7 @@
     "authorUrl": "https://sketchfab.com/pocketpastel456",
     "source": "https://sketchfab.com/3d-models/1f051fc353e746869844ca45412c850b",
     "license": "http://creativecommons.org/licenses/by/4.0/",
-    "changes": "Flower stem extracted and normalized; textures resized to at most 1024px; materials normalized at runtime."
+    "changes": "One carnation and its stem retained; bottle and two side leaves removed. Textures and unused geometry optimized."
   },
   {
     "file": "lily.glb",
@@ -150,7 +150,7 @@
     "authorUrl": "https://sketchfab.com/TahirNilin",
     "source": "https://sketchfab.com/3d-models/cc518ec481154c51b1effbc67dd685ff",
     "license": "http://creativecommons.org/licenses/by/4.0/",
-    "changes": "Complete lily stem retained; textures resized to at most 1024px; materials normalized at runtime."
+    "changes": "One original lily bloom retained; source leaves removed and receptacle aligned with the studio cut stem. Textures and unused geometry optimized."
   },
   {
     "file": "lotus.glb",
@@ -159,16 +159,16 @@
     "authorUrl": "https://sketchfab.com/ffishAsia-and-floraZia",
     "source": "https://sketchfab.com/3d-models/d69e1be5895f40e484f0db472a721c2f",
     "license": "https://creativecommons.org/publicdomain/zero/1.0/",
-    "changes": "Photogrammetry lotus flower retained; textures resized to at most 1024px; materials converted to PBR."
+    "changes": "One flowering lotus and stem retained; pod, leaf and scan marker removed. Textures and unused geometry optimized."
   },
   {
     "file": "anemone.glb",
-    "title": "Anemone hybrida 'Honorine Jobert'",
-    "author": "Livin Vision",
-    "authorUrl": "https://sketchfab.com/LivinVision",
-    "source": "https://sketchfab.com/3d-models/d40b58e0af514977aa52b839659dc1d3",
-    "license": "http://creativecommons.org/licenses/by/4.0/",
-    "changes": "Complete anemone stem retained; textures resized to at most 1024px; materials normalized at runtime."
+    "title": "Wood anemone",
+    "author": "Skuft",
+    "authorUrl": "https://sketchfab.com/Skuft",
+    "source": "https://sketchfab.com/3d-models/cec4f820ad70467899c661498564a780",
+    "license": "https://creativecommons.org/licenses/by/4.0/",
+    "changes": "One complete flower head retained; branching leaves and source stem removed. Petal color adjusted to natural ivory; diameter calibrated to 9 cm."
   },
   {
     "file": "chamomile.glb",
@@ -177,7 +177,7 @@
     "authorUrl": "https://sketchfab.com/Cosmic_dust",
     "source": "https://sketchfab.com/3d-models/31df46bbac484e3aa549032d8f321b6d",
     "license": "http://creativecommons.org/licenses/by/4.0/",
-    "changes": "Complete chamomile stem retained; textures resized to at most 1024px; materials normalized at runtime."
+    "changes": "One chamomile bloom retained and calibrated to 4.5 cm; bush and disconnected triangular leaf removed; stem attachment recentered."
   },
   {
     "file": "delphinium.glb",
@@ -186,7 +186,7 @@
     "authorUrl": "https://sketchfab.com/tazama",
     "source": "https://sketchfab.com/3d-models/221602f5ae55471990f669d480217626",
     "license": "http://creativecommons.org/licenses/by/4.0/",
-    "changes": "Complete delphinium spike retained; textures resized to at most 1024px; materials normalized at runtime."
+    "changes": "One flowering spike retained and normalized. Textures and unused geometry optimized."
   },
   {
     "file": "snowdrop.glb",
@@ -195,7 +195,7 @@
     "authorUrl": "https://sketchfab.com/lolipop_1707",
     "source": "https://sketchfab.com/3d-models/14890248c9374b569a7bc0d497ccdbe0",
     "license": "http://creativecommons.org/licenses/by/4.0/",
-    "changes": "One snowdrop stem extracted; scale normalized for Bloomroom arrangement."
+    "changes": "One open snowdrop and curved peduncle retained; basal leaves, other flowers and alternate levels of detail removed."
   },
   {
     "file": "lavender.glb",
@@ -204,7 +204,7 @@
     "authorUrl": "https://sketchfab.com/Moons",
     "source": "https://sketchfab.com/3d-models/7c92205759f24f8fb0a0974d192e2c74",
     "license": "http://creativecommons.org/licenses/by/4.0/",
-    "changes": "Lavender stems extracted from vase scene; textures resized to at most 1024px; materials normalized."
+    "changes": "One lavender spike and stem retained; vase and other spikes removed. Textures and unused geometry optimized."
   },
   {
     "file": "ivy.glb",
@@ -213,7 +213,7 @@
     "authorUrl": "https://sketchfab.com/lolipop_1707",
     "source": "https://sketchfab.com/3d-models/0c80d67aa8fb4688bd1187518e4cc686",
     "license": "http://creativecommons.org/licenses/by/4.0/",
-    "changes": "One trailing ivy vine extracted; scale normalized for Bloomroom arrangement."
+    "changes": "One complete branching ivy shoot retained with its original leaves and stem; other shoots and levels of detail removed. Textures and unused geometry optimized."
   },
   {
     "file": "monstera.glb",
@@ -222,6 +222,76 @@
     "authorUrl": "https://sketchfab.com/Shift4cube",
     "source": "https://sketchfab.com/3d-models/321f1c05b802494196096e462a6c4e72",
     "license": "http://creativecommons.org/licenses/by/4.0/",
-    "changes": "Single monstera leaf with stem retained; textures resized to at most 1024px; materials normalized."
+    "changes": "One leaf blade, its veins and petiole retained; pot, soil and other leaves removed. Textures and unused geometry optimized."
+  },
+  {
+    "file": "ranunculus.glb",
+    "title": "Generic Ranunculus flower",
+    "author": "assetfactory",
+    "authorUrl": "https://sketchfab.com/assetfactory",
+    "source": "https://sketchfab.com/3d-models/generic-ranunculus-flower-fc8c0cd50b7f4e108d054c401b2bc148",
+    "license": "https://sketchfab.com/licenses",
+    "licenseLabel": "Free Standard",
+    "changes": "One ivory bloom extracted from the five-color pack; source leaves and stalk removed; 8 cm face diameter."
+  },
+  {
+    "file": "narcissus.glb",
+    "title": "CC0 スイセン 水仙 Chinese Sacred Lily, N. tazetta",
+    "author": "ffish.asia / floraZia.com",
+    "authorUrl": "https://sketchfab.com/ffishAsia-and-floraZia",
+    "source": "https://sketchfab.com/3d-models/cc0-chinese-sacred-lily-n-tazetta-ab69ed2779eb4a14b0d3967859c5242a",
+    "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+    "licenseLabel": "CC0 Public Domain",
+    "changes": "One complete scanned flower extracted; bulbs and separate leaves removed; geometry simplified, textures resized, 5 cm face diameter."
+  },
+  {
+    "file": "dahlia.glb",
+    "title": "Bicolor dahila",
+    "author": "Angelica_Andreasson",
+    "authorUrl": "https://sketchfab.com/Angelica_Andreasson",
+    "source": "https://sketchfab.com/3d-models/bicolor-dahila-6b7e01c17b114aa1ba4902f52e8b5966",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "licenseLabel": "CC Attribution",
+    "changes": "Replaced the non-commercial pack with a CC BY botanical scan; one 12 cm bloom retained; lower leaves removed."
+  },
+  {
+    "file": "amaryllis.glb",
+    "title": "PINK AMARYLLIS",
+    "author": "tmt.accon",
+    "authorUrl": "https://sketchfab.com/tmt.accon",
+    "source": "https://sketchfab.com/3d-models/pink-amaryllis-79a78278d66d4659ace5de05826df23d",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "licenseLabel": "CC Attribution",
+    "changes": "Replaced the sword asset with a real flowering Hippeastrum stem; one natural multi-bell cut unit, 70 cm reference height."
+  },
+  {
+    "file": "astrantia.glb",
+    "title": "Flowers",
+    "author": "rahumbarger27",
+    "authorUrl": "https://sketchfab.com/rahumbarger27",
+    "source": "https://sketchfab.com/3d-models/flowers-2aa7264393544dc98f7b2e74857e6952",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "licenseLabel": "CC Attribution",
+    "changes": "One complete 4 cm masterwort bloom extracted from a mixed vase; all other flowers, leaves, vase and rope removed; petal nodes batched by material."
+  },
+  {
+    "file": "eryngium.glb",
+    "title": "Mixed Flower Bouquet – Downloadable 3D Scan",
+    "author": "David Antalek",
+    "authorUrl": "https://sketchfab.com/David.Antalek",
+    "source": "https://sketchfab.com/3d-models/mixed-flower-bouquet-downloadable-3d-scan-e19a4c1a3b1541308923c744221899e7",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "licenseLabel": "CC Attribution",
+    "changes": "One 7 cm sea-holly flower extracted from the CC BY bouquet scan; wrapper and surrounding flowers removed."
+  },
+  {
+    "file": "pine-cone.glb",
+    "title": "Pine Cone",
+    "author": "ChrisLee",
+    "authorUrl": "https://sketchfab.com/chrisleeX",
+    "source": "https://sketchfab.com/3d-models/pine-cone-f606d751e51341bb807209c6404208ed",
+    "license": "http://creativecommons.org/licenses/by/4.0/",
+    "licenseLabel": "CC Attribution",
+    "changes": "One 8 cm original cone retained; other cones and needles removed, complete geometry simplified; displayed on a supporting cut stem."
   }
 ]

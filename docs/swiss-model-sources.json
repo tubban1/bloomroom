@@ -1,0 +1,365 @@
+{
+  "verifiedModels": [
+    {
+      "uid": "fc8c0cd50b7f4e108d054c401b2bc148",
+      "name": "Generic Ranunculus flower",
+      "viewerUrl": "https://sketchfab.com/3d-models/generic-ranunculus-flower-fc8c0cd50b7f4e108d054c401b2bc148",
+      "license": {
+        "uri": "https://api.sketchfab.com/v3/licenses/72eb2b1960364637901eacce19283624",
+        "label": "Free Standard",
+        "fullName": "Free Standard",
+        "requirements": "Under basic restrictions, use worldwide, on all types of media, commercially or not, and in all types of derivative works",
+        "url": "https://sketchfab.com/licenses",
+        "slug": "free-st"
+      },
+      "user": {
+        "uid": "04380bee8c3e417fa2f05dafd3e779f6",
+        "username": "assetfactory",
+        "displayName": "assetfactory",
+        "account": "prem",
+        "profileUrl": "https://sketchfab.com/assetfactory",
+        "avatar": {
+          "uid": "072b5b25c6df4d3ab5be546a7f9674e9",
+          "uri": "https://api.sketchfab.com/v3/avatars/072b5b25c6df4d3ab5be546a7f9674e9",
+          "images": [
+            {
+              "width": 32,
+              "height": 32,
+              "size": 897,
+              "url": "https://media.sketchfab.com/avatars/072b5b25c6df4d3ab5be546a7f9674e9/a23c3b48cb3b4c39ba545501c49f105b.png"
+            },
+            {
+              "width": 48,
+              "height": 48,
+              "size": 1385,
+              "url": "https://media.sketchfab.com/avatars/072b5b25c6df4d3ab5be546a7f9674e9/cf1e546691664850ae0663f756b98c9e.png"
+            },
+            {
+              "width": 90,
+              "height": 90,
+              "size": 3052,
+              "url": "https://media.sketchfab.com/avatars/072b5b25c6df4d3ab5be546a7f9674e9/b04983d0d4e0499d9b91eb455c1c11a9.png"
+            },
+            {
+              "width": 100,
+              "height": 100,
+              "size": 3535,
+              "url": "https://media.sketchfab.com/avatars/072b5b25c6df4d3ab5be546a7f9674e9/0a01d2d056bc41409d0a2be9b784b8fb.png"
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/04380bee8c3e417fa2f05dafd3e779f6"
+      }
+    },
+    {
+      "uid": "ab69ed2779eb4a14b0d3967859c5242a",
+      "name": "CC0 スイセン 水仙 Chinese Sacred Lily, N. tazetta",
+      "viewerUrl": "https://sketchfab.com/3d-models/cc0-chinese-sacred-lily-n-tazetta-ab69ed2779eb4a14b0d3967859c5242a",
+      "license": {
+        "uri": "https://api.sketchfab.com/v3/licenses/7c23a1ba438d4306920229c12afcb5f9",
+        "label": "CC0 Public Domain",
+        "fullName": "CC0 Public Domain",
+        "requirements": "Credit is not mandatory. Commercial use is allowed.",
+        "url": "http://creativecommons.org/publicdomain/zero/1.0/",
+        "slug": "cc0"
+      },
+      "user": {
+        "uid": "19cfc338f034437189579a2aa1f0e1ff",
+        "username": "ffishAsia-and-floraZia",
+        "displayName": "ffish.asia / floraZia.com",
+        "account": "pro",
+        "profileUrl": "https://sketchfab.com/ffishAsia-and-floraZia",
+        "avatar": {
+          "uid": "fcacc84a68154e3a98b9f3d1ce7a413a",
+          "uri": "https://api.sketchfab.com/v3/avatars/fcacc84a68154e3a98b9f3d1ce7a413a",
+          "images": [
+            {
+              "width": 32,
+              "height": 32,
+              "size": 665,
+              "url": "https://media.sketchfab.com/avatars/fcacc84a68154e3a98b9f3d1ce7a413a/b671f00bdb8d4e6e8500bdb66b61e727.jpeg"
+            },
+            {
+              "width": 48,
+              "height": 48,
+              "size": 1061,
+              "url": "https://media.sketchfab.com/avatars/fcacc84a68154e3a98b9f3d1ce7a413a/b749d50bb80b45c0b66f1eaa289272f2.jpeg"
+            },
+            {
+              "width": 90,
+              "height": 90,
+              "size": 3053,
+              "url": "https://media.sketchfab.com/avatars/fcacc84a68154e3a98b9f3d1ce7a413a/dbec28e52d1f4e6b8ff6baa0e9551c94.jpeg"
+            },
+            {
+              "width": 100,
+              "height": 100,
+              "size": 3622,
+              "url": "https://media.sketchfab.com/avatars/fcacc84a68154e3a98b9f3d1ce7a413a/821da58844df4e568d1939081d023caa.jpeg"
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/19cfc338f034437189579a2aa1f0e1ff"
+      }
+    },
+    {
+      "uid": "6b7e01c17b114aa1ba4902f52e8b5966",
+      "name": "Bicolor dahila",
+      "viewerUrl": "https://sketchfab.com/3d-models/bicolor-dahila-6b7e01c17b114aa1ba4902f52e8b5966",
+      "license": {
+        "uri": "https://api.sketchfab.com/v3/licenses/322a749bcfa841b29dff1e8a1bb74b0b",
+        "label": "CC Attribution",
+        "fullName": "Creative Commons Attribution",
+        "requirements": "Author must be credited. Commercial use is allowed.",
+        "url": "http://creativecommons.org/licenses/by/4.0/",
+        "slug": "by"
+      },
+      "user": {
+        "uid": "014cb0ec1f8d426287db4fea2b69e0b8",
+        "username": "Angelica_Andreasson",
+        "displayName": "Angelica_Andreasson",
+        "account": "pro",
+        "profileUrl": "https://sketchfab.com/Angelica_Andreasson",
+        "avatar": {
+          "uid": "ab7e1e8cd2c74a638acb49ddd1881397",
+          "uri": "https://api.sketchfab.com/v3/avatars/ab7e1e8cd2c74a638acb49ddd1881397",
+          "images": [
+            {
+              "width": 32,
+              "height": 32,
+              "size": 1109,
+              "url": "https://media.sketchfab.com/avatars/ab7e1e8cd2c74a638acb49ddd1881397/7c9ef7ae0de24903abdc0be3af6127c8.jpeg"
+            },
+            {
+              "width": 48,
+              "height": 48,
+              "size": 1624,
+              "url": "https://media.sketchfab.com/avatars/ab7e1e8cd2c74a638acb49ddd1881397/d8b2b6ddfd3542088bb66b7d59d7744d.jpeg"
+            },
+            {
+              "width": 90,
+              "height": 90,
+              "size": 3834,
+              "url": "https://media.sketchfab.com/avatars/ab7e1e8cd2c74a638acb49ddd1881397/fb6ed0c87ea5476e84acf02b96385212.jpeg"
+            },
+            {
+              "width": 100,
+              "height": 100,
+              "size": 4416,
+              "url": "https://media.sketchfab.com/avatars/ab7e1e8cd2c74a638acb49ddd1881397/25f360a438ef4fefa31e3458cc9e5112.jpeg"
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/014cb0ec1f8d426287db4fea2b69e0b8"
+      }
+    },
+    {
+      "uid": "79a78278d66d4659ace5de05826df23d",
+      "name": "PINK AMARYLLIS",
+      "viewerUrl": "https://sketchfab.com/3d-models/pink-amaryllis-79a78278d66d4659ace5de05826df23d",
+      "license": {
+        "uri": "https://api.sketchfab.com/v3/licenses/322a749bcfa841b29dff1e8a1bb74b0b",
+        "label": "CC Attribution",
+        "fullName": "Creative Commons Attribution",
+        "requirements": "Author must be credited. Commercial use is allowed.",
+        "url": "http://creativecommons.org/licenses/by/4.0/",
+        "slug": "by"
+      },
+      "user": {
+        "uid": "b014ef6960d74b6391dd2dc18abc344a",
+        "username": "tmt.accon",
+        "displayName": "tmt.accon",
+        "account": "basic",
+        "profileUrl": "https://sketchfab.com/tmt.accon",
+        "avatar": {
+          "uid": "51af6a870cce449eb75b0345feebaebb",
+          "uri": "https://api.sketchfab.com/v3/avatars/51af6a870cce449eb75b0345feebaebb",
+          "images": [
+            {
+              "width": 90,
+              "height": 90,
+              "size": 5719,
+              "url": "https://media.sketchfab.com/avatars/51af6a870cce449eb75b0345feebaebb/2ef0f894055b4bb69123b2a27fa2d379.jpeg"
+            },
+            {
+              "width": 100,
+              "height": 100,
+              "size": 6496,
+              "url": "https://media.sketchfab.com/avatars/51af6a870cce449eb75b0345feebaebb/ab11eedf96374486acb544f71a23b165.jpeg"
+            },
+            {
+              "width": 32,
+              "height": 32,
+              "size": 1359,
+              "url": "https://media.sketchfab.com/avatars/51af6a870cce449eb75b0345feebaebb/35f6f9b6c9a14a548ce472582d8a9bb5.jpeg"
+            },
+            {
+              "width": 48,
+              "height": 48,
+              "size": 2584,
+              "url": "https://media.sketchfab.com/avatars/51af6a870cce449eb75b0345feebaebb/a8072a51447c4d41ab177b357111b420.jpeg"
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/b014ef6960d74b6391dd2dc18abc344a"
+      }
+    },
+    {
+      "uid": "2aa7264393544dc98f7b2e74857e6952",
+      "name": "Flowers",
+      "viewerUrl": "https://sketchfab.com/3d-models/flowers-2aa7264393544dc98f7b2e74857e6952",
+      "license": {
+        "uri": "https://api.sketchfab.com/v3/licenses/322a749bcfa841b29dff1e8a1bb74b0b",
+        "label": "CC Attribution",
+        "fullName": "Creative Commons Attribution",
+        "requirements": "Author must be credited. Commercial use is allowed.",
+        "url": "http://creativecommons.org/licenses/by/4.0/",
+        "slug": "by"
+      },
+      "user": {
+        "uid": "cf2cdccea2e84ca09cc3a6f45cb89eb6",
+        "username": "rahumbarger27",
+        "displayName": "rahumbarger27",
+        "account": "basic",
+        "profileUrl": "https://sketchfab.com/rahumbarger27",
+        "avatar": {
+          "uid": "51af6a870cce449eb75b0345feebaebb",
+          "uri": "https://api.sketchfab.com/v3/avatars/51af6a870cce449eb75b0345feebaebb",
+          "images": [
+            {
+              "width": 90,
+              "height": 90,
+              "size": 5719,
+              "url": "https://media.sketchfab.com/avatars/51af6a870cce449eb75b0345feebaebb/2ef0f894055b4bb69123b2a27fa2d379.jpeg"
+            },
+            {
+              "width": 100,
+              "height": 100,
+              "size": 6496,
+              "url": "https://media.sketchfab.com/avatars/51af6a870cce449eb75b0345feebaebb/ab11eedf96374486acb544f71a23b165.jpeg"
+            },
+            {
+              "width": 32,
+              "height": 32,
+              "size": 1359,
+              "url": "https://media.sketchfab.com/avatars/51af6a870cce449eb75b0345feebaebb/35f6f9b6c9a14a548ce472582d8a9bb5.jpeg"
+            },
+            {
+              "width": 48,
+              "height": 48,
+              "size": 2584,
+              "url": "https://media.sketchfab.com/avatars/51af6a870cce449eb75b0345feebaebb/a8072a51447c4d41ab177b357111b420.jpeg"
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/cf2cdccea2e84ca09cc3a6f45cb89eb6"
+      }
+    },
+    {
+      "uid": "e19a4c1a3b1541308923c744221899e7",
+      "name": "Mixed Flower Bouquet – Downloadable 3D Scan",
+      "viewerUrl": "https://sketchfab.com/3d-models/mixed-flower-bouquet-downloadable-3d-scan-e19a4c1a3b1541308923c744221899e7",
+      "license": {
+        "uri": "https://api.sketchfab.com/v3/licenses/322a749bcfa841b29dff1e8a1bb74b0b",
+        "label": "CC Attribution",
+        "fullName": "Creative Commons Attribution",
+        "requirements": "Author must be credited. Commercial use is allowed.",
+        "url": "http://creativecommons.org/licenses/by/4.0/",
+        "slug": "by"
+      },
+      "user": {
+        "uid": "5b3a59229d8f46b592542dcbf4388672",
+        "username": "David.Antalek",
+        "displayName": "David Antalek",
+        "account": "basic",
+        "profileUrl": "https://sketchfab.com/David.Antalek",
+        "avatar": {
+          "uid": "435648949d1640bfb9aeb1febb1b9542",
+          "uri": "https://api.sketchfab.com/v3/avatars/435648949d1640bfb9aeb1febb1b9542",
+          "images": [
+            {
+              "width": 32,
+              "height": 32,
+              "size": 911,
+              "url": "https://media.sketchfab.com/avatars/435648949d1640bfb9aeb1febb1b9542/8bcf58b0b9e24729853a9bd500a950b4.jpeg"
+            },
+            {
+              "width": 48,
+              "height": 48,
+              "size": 1566,
+              "url": "https://media.sketchfab.com/avatars/435648949d1640bfb9aeb1febb1b9542/63758b6ba4384d9eb259d97ea3bec9ce.jpeg"
+            },
+            {
+              "width": 90,
+              "height": 90,
+              "size": 4723,
+              "url": "https://media.sketchfab.com/avatars/435648949d1640bfb9aeb1febb1b9542/0f94044542a54a99a99d9d47ec1fb6ac.jpeg"
+            },
+            {
+              "width": 100,
+              "height": 100,
+              "size": 5736,
+              "url": "https://media.sketchfab.com/avatars/435648949d1640bfb9aeb1febb1b9542/dd6d177ce8544111b01e474c4ad70514.jpeg"
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/5b3a59229d8f46b592542dcbf4388672"
+      }
+    },
+    {
+      "uid": "f606d751e51341bb807209c6404208ed",
+      "name": "Pine Cone",
+      "viewerUrl": "https://sketchfab.com/3d-models/pine-cone-f606d751e51341bb807209c6404208ed",
+      "license": {
+        "uri": "https://api.sketchfab.com/v3/licenses/322a749bcfa841b29dff1e8a1bb74b0b",
+        "label": "CC Attribution",
+        "fullName": "Creative Commons Attribution",
+        "requirements": "Author must be credited. Commercial use is allowed.",
+        "url": "http://creativecommons.org/licenses/by/4.0/",
+        "slug": "by"
+      },
+      "user": {
+        "uid": "6bb4ef8b2405487f9fe846034db0f251",
+        "username": "chrisleeX",
+        "displayName": "ChrisLee",
+        "account": "basic",
+        "profileUrl": "https://sketchfab.com/chrisleeX",
+        "avatar": {
+          "uid": "33bd3ee0e8cb4c16b042bef27eb5f1cb",
+          "uri": "https://api.sketchfab.com/v3/avatars/33bd3ee0e8cb4c16b042bef27eb5f1cb",
+          "images": [
+            {
+              "width": 32,
+              "height": 32,
+              "size": 850,
+              "url": "https://media.sketchfab.com/avatars/33bd3ee0e8cb4c16b042bef27eb5f1cb/58360201a0cd4b179c0d5c21042ef4ae.jpeg"
+            },
+            {
+              "width": 48,
+              "height": 48,
+              "size": 1411,
+              "url": "https://media.sketchfab.com/avatars/33bd3ee0e8cb4c16b042bef27eb5f1cb/c9b5a6d0643445b69ee44bb2f50bf9e6.jpeg"
+            },
+            {
+              "width": 90,
+              "height": 90,
+              "size": 3925,
+              "url": "https://media.sketchfab.com/avatars/33bd3ee0e8cb4c16b042bef27eb5f1cb/26ea339565ca48928e452b1d64a26d2a.jpeg"
+            },
+            {
+              "width": 100,
+              "height": 100,
+              "size": 4592,
+              "url": "https://media.sketchfab.com/avatars/33bd3ee0e8cb4c16b042bef27eb5f1cb/13189d8c84d34d4b83fc4cded776eeef.jpeg"
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/6bb4ef8b2405487f9fe846034db0f251"
+      }
+    }
+  ],
+  "excluded": {
+    "olive-branch": "Source is a shipwreck. Examined replacements were flat artwork or bare tree trunks, unsuitable for a realistic foliage unit.",
+    "rosehip": "Source is a point cloud without triangles. Rosa chinensis replacement is a potted shrub without identifiable hips."
+  }
+}

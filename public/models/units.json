@@ -1,8 +1,9 @@
 {
   "anemone": {
     "mode": "head",
-    "height": 0.18271148568901288,
-    "width": 0.31537931425441373,
+    "height": 0.31890163974845726,
+    "width": 0.32142857142857145,
+    "referenceWidthCm": 9,
     "base": [
       0,
       0,
@@ -13,7 +14,8 @@
   "calla-lily": {
     "mode": "stem",
     "height": 1.0,
-    "width": 0.3472508676682833,
+    "width": 0.2,
+    "referenceWidthCm": 14,
     "base": [
       0,
       0,
@@ -22,53 +24,65 @@
     "unit": "studio unit = 28 cm"
   },
   "carnation": {
-    "mode": "stem",
-    "height": 0.9999999999999999,
-    "width": 0.3469794978435937,
+    "mode": "head",
+    "height": 0.3746891121371093,
+    "width": 0.2857142857142857,
+    "referenceWidthCm": 8,
     "base": [
       0,
       0,
       0
     ],
-    "unit": "studio unit = 28 cm"
+    "unit": "studio unit = 28 cm",
+    "foliageRemoved": true,
+    "sourceStemReplaced": true
   },
   "chamomile": {
     "mode": "head",
-    "height": 0.0975060524087933,
-    "width": 0.14285714285714285,
+    "height": 0.0561556115733996,
+    "width": 0.16071428571428573,
+    "referenceWidthCm": 4.5,
     "base": [
       0,
       0,
       0
     ],
-    "unit": "studio unit = 28 cm"
+    "unit": "studio unit = 28 cm",
+    "minY": 0.0,
+    "attachment": "base of bloom"
   },
   "chrysanthemum": {
     "mode": "stem",
     "height": 1.0,
-    "width": 0.5120381778482153,
+    "width": 0.24872934818267822,
+    "referenceWidthCm": 19.27063100039959,
     "base": [
       0,
       0,
       0
     ],
-    "unit": "studio unit = 28 cm"
+    "unit": "studio unit = 28 cm",
+    "foliageRemoved": true
   },
   "daisy": {
     "mode": "head",
-    "height": 0.2810814191634262,
+    "height": 0.28108139569693524,
     "width": 0.2857142857142857,
+    "referenceWidthCm": 8,
     "base": [
       0,
       0,
       0
     ],
-    "unit": "studio unit = 28 cm"
+    "unit": "studio unit = 28 cm",
+    "minY": 0.0,
+    "attachment": "base of bloom"
   },
   "delphinium": {
     "mode": "stem",
     "height": 0.9999999999999999,
-    "width": 0.46586402562526685,
+    "width": 0.36250778212884216,
+    "referenceWidthCm": 26,
     "base": [
       0,
       0,
@@ -79,7 +93,8 @@
   "eucalyptus-sprig": {
     "mode": "stem",
     "height": 1.0,
-    "width": 1.1700163586759902,
+    "width": 0.5142857142857142,
+    "referenceWidthCm": 36,
     "base": [
       0,
       0,
@@ -90,7 +105,8 @@
   "eucalyptus": {
     "mode": "stem",
     "height": 1.0,
-    "width": 0.6578454893087401,
+    "width": 0.4285714285714285,
+    "referenceWidthCm": 30,
     "base": [
       0,
       0,
@@ -101,7 +117,8 @@
   "fern": {
     "mode": "stem",
     "height": 1.0,
-    "width": 0.35024102331570184,
+    "width": 0.29185387912443916,
+    "referenceWidthCm": 22,
     "base": [
       0,
       0,
@@ -111,8 +128,9 @@
   },
   "garden-rose": {
     "mode": "head",
-    "height": 0.21671824012276358,
-    "width": 0.35714285714285715,
+    "height": 0.2600618881473163,
+    "width": 0.42857142857142855,
+    "referenceWidthCm": 12,
     "base": [
       0,
       0,
@@ -122,8 +140,9 @@
   },
   "gerbera": {
     "mode": "head",
-    "height": 0.23985261919399212,
-    "width": 0.331893824534962,
+    "height": 0.2839095147834786,
+    "width": 0.3928571428571428,
+    "referenceWidthCm": 11,
     "base": [
       0,
       0,
@@ -133,19 +152,23 @@
   },
   "hydrangea": {
     "mode": "head",
-    "height": 0.39768913652323046,
+    "height": 0.5550452038866434,
     "width": 0.6428571428571429,
+    "referenceWidthCm": 18,
     "base": [
       0,
       0,
       0
     ],
-    "unit": "studio unit = 28 cm"
+    "unit": "studio unit = 28 cm",
+    "minY": 0.0,
+    "attachment": "base of bloom"
   },
   "ivy": {
-    "mode": "head",
-    "height": 0.2693627668541105,
-    "width": 0.32142857142857145,
+    "mode": "stem",
+    "height": 1.0,
+    "width": 0.4571428571428571,
+    "referenceWidthCm": 32,
     "base": [
       0,
       0,
@@ -156,7 +179,8 @@
   "lavender": {
     "mode": "stem",
     "height": 1.0,
-    "width": 0.09646498383160412,
+    "width": 0.08250152358558878,
+    "referenceWidthCm": 7,
     "base": [
       0,
       0,
@@ -167,7 +191,8 @@
   "lily-of-the-valley": {
     "mode": "stem",
     "height": 1.0,
-    "width": 0.5324855235635649,
+    "width": 0.2857142857142857,
+    "referenceWidthCm": 20,
     "base": [
       0,
       0,
@@ -177,30 +202,37 @@
   },
   "lily": {
     "mode": "head",
-    "height": 0.4050407911911885,
-    "width": 0.4573432267946669,
+    "height": 0.27621439695358274,
+    "width": 0.5,
+    "referenceWidthCm": 14,
     "base": [
       0,
       0,
       0
     ],
-    "unit": "studio unit = 28 cm"
+    "unit": "studio unit = 28 cm",
+    "minY": -0.1423013779334724,
+    "attachment": "receptacle"
   },
   "lotus": {
     "mode": "stem",
     "height": 1.0,
-    "width": 0.7025801171476673,
+    "width": 0.3571428571428572,
+    "referenceWidthCm": 25,
     "base": [
       0,
       0,
       0
     ],
-    "unit": "studio unit = 28 cm"
+    "unit": "studio unit = 28 cm",
+    "bloomBaseY": 0.7204182603031358,
+    "petalAspectRestored": true
   },
   "monstera": {
     "mode": "stem",
     "height": 1.0,
-    "width": 0.42369295457940526,
+    "width": 0.36874654061612244,
+    "referenceWidthCm": 30,
     "base": [
       0,
       0,
@@ -210,8 +242,9 @@
   },
   "orchid": {
     "mode": "head",
-    "height": 0.33014374058417023,
-    "width": 0.3571428571428571,
+    "height": 0.36315811464258724,
+    "width": 0.39285714285714285,
+    "referenceWidthCm": 11,
     "base": [
       0,
       0,
@@ -221,8 +254,9 @@
   },
   "peony": {
     "mode": "head",
-    "height": 0.3037849862814711,
-    "width": 0.40342799897434833,
+    "height": 0.43029095941183515,
+    "width": 0.5714285714285714,
+    "referenceWidthCm": 16,
     "base": [
       0,
       0,
@@ -234,6 +268,7 @@
     "mode": "head",
     "height": 0.20796974784231995,
     "width": 0.35714285714285715,
+    "referenceWidthCm": 10,
     "base": [
       0,
       0,
@@ -244,18 +279,21 @@
   "snowdrop": {
     "mode": "stem",
     "height": 1.0,
-    "width": 0.6488134420529692,
+    "width": 0.18312134454026818,
+    "referenceWidthCm": 12.818494117818773,
     "base": [
       0,
       0,
       0
     ],
-    "unit": "studio unit = 28 cm"
+    "unit": "studio unit = 28 cm",
+    "foliageRemoved": true
   },
   "sunflower": {
     "mode": "head",
-    "height": 0.5998463634838979,
-    "width": 0.6428571428571428,
+    "height": 0.6664959594265533,
+    "width": 0.7142857142857143,
+    "referenceWidthCm": 20,
     "base": [
       0,
       0,
@@ -265,13 +303,121 @@
   },
   "tulip": {
     "mode": "head",
-    "height": 0.26818425592798323,
-    "width": 0.1542568408938928,
+    "height": 0.34628179697909156,
+    "width": 0.21428571428571427,
+    "referenceWidthCm": 6,
     "base": [
       0,
       0,
       0
     ],
-    "unit": "studio unit = 28 cm"
+    "unit": "studio unit = 28 cm",
+    "minY": 0.0,
+    "attachment": "base of bloom"
+  },
+  "ranunculus": {
+    "mode": "head",
+    "height": 0.14863616439663221,
+    "width": 0.2857142857142857,
+    "referenceWidthCm": 8.0,
+    "minY": -0.027439926251654017,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm",
+    "attachment": "single cut unit; bloom geometry remains rigid",
+    "naturalTexture": true
+  },
+  "narcissus": {
+    "mode": "head",
+    "height": 0.20208606123924255,
+    "width": 0.1782940775156021,
+    "referenceWidthCm": 4.992234170436859,
+    "minY": -0.0004695376264862716,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm",
+    "attachment": "single cut unit; bloom geometry remains rigid",
+    "naturalTexture": true
+  },
+  "dahlia": {
+    "mode": "head",
+    "height": 0.33234434534057955,
+    "width": 0.42857142857142855,
+    "referenceWidthCm": 12.0,
+    "minY": 0.0,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm",
+    "attachment": "single cut unit; bloom geometry remains rigid",
+    "naturalTexture": true
+  },
+  "amaryllis": {
+    "mode": "stem",
+    "height": 1.0,
+    "width": 0.513693474510952,
+    "referenceWidthCm": 39.461690082072856,
+    "minY": 0.0,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm",
+    "attachment": "single cut unit; bloom geometry remains rigid",
+    "naturalTexture": true
+  },
+  "astrantia": {
+    "mode": "head",
+    "height": 0.06152229436109771,
+    "width": 0.14285714285714285,
+    "referenceWidthCm": 4.0,
+    "minY": -0.040319667720646275,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm",
+    "attachment": "single cut unit; bloom geometry remains rigid",
+    "naturalTexture": true
+  },
+  "eryngium": {
+    "mode": "head",
+    "height": 0.2283045083458501,
+    "width": 0.25,
+    "referenceWidthCm": 7.0,
+    "minY": 0.0,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm",
+    "attachment": "single cut unit; bloom geometry remains rigid",
+    "naturalTexture": true
+  },
+  "pine-cone": {
+    "mode": "head",
+    "height": 0.27200278639793396,
+    "width": 0.2859202027320862,
+    "referenceWidthCm": 8.005765676498413,
+    "minY": 1.1940022886847146e-05,
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "unit": "studio unit = 28 cm",
+    "attachment": "single cut unit; bloom geometry remains rigid",
+    "naturalTexture": true
   }
 }

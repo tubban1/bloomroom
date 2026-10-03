@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { soundName, t, type Language } from "../lib/translations";
 import {
   Volume2,
   VolumeX,
@@ -9,10 +10,10 @@ import {
   CloudRain,
   Bird,
   Flame,
-  Music,
+  Bug,
 } from "lucide-react";
 
-export type AmbientId = "none" | "waves" | "wind" | "rain" | "birds" | "fireplace";
+export type AmbientId = "none" | "waves" | "wind" | "rain" | "birds" | "fireplace" | "cicadas";
 
 export interface AmbientOption {
   id: AmbientId;
@@ -64,28 +65,31 @@ export const AMBIENT_OPTIONS: AmbientOption[] = [
     icon: Flame,
     note: "Cozy wood embers",
   },
+  {
+    id: "cicadas",
+    label: "Cicadas",
+    labelZh: "蝉鸣",
+    src: "/audio/cicadas.mp3",
+    icon: Bug,
+    note: "Summer cicadas chorus",
+  },
 ];
 
 interface AmbientSoundProps {
   currentId?: AmbientId;
   onChange?: (id: AmbientId) => void;
+  language?: Language;
 }
 
-export function AmbientSoundPanel({ currentId: externalId, onChange }: AmbientSoundProps) {
-  const [activeId, setActiveId] = useState<AmbientId>(externalId ?? "none");
+export function AmbientSoundPanel({ currentId: externalId, onChange, language = "en" }: AmbientSoundProps) {
+  const [localId, setLocalId] = useState<AmbientId>("none");
+  const activeId = externalId ?? localId;
   const [volume, setVolume] = useState<number>(0.65);
   const [muted, setMuted] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Sync external id if controlled
-  useEffect(() => {
-    if (externalId !== undefined && externalId !== activeId) {
-      setActiveId(externalId);
-    }
-  }, [externalId]);
 
   // Clean up on unmount
   useEffect(() => {
@@ -184,7 +188,7 @@ export function AmbientSoundPanel({ currentId: externalId, onChange }: AmbientSo
 
   const toggleTrack = (id: AmbientId) => {
     const next = activeId === id ? "none" : id;
-    setActiveId(next);
+    setLocalId(next);
     if (onChange) onChange(next);
   };
 
@@ -198,9 +202,9 @@ export function AmbientSoundPanel({ currentId: externalId, onChange }: AmbientSo
     <div className="tool-section ambient-sound-section">
       <div className="tool-label">
         <span className="ambient-label-text">
-          Ambience · 音效
+          {t(language, "ambience")}
           {isPlaying && activeOption && (
-            <span className="ambient-pulse" title={`Playing ${activeOption.label}`}>
+            <span className="ambient-pulse" title={`${soundName(language, activeOption.id as Exclude<AmbientId, "none">)}`}>
               <span className="pulse-bar" />
               <span className="pulse-bar" />
               <span className="pulse-bar" />
@@ -210,9 +214,9 @@ export function AmbientSoundPanel({ currentId: externalId, onChange }: AmbientSo
         <button
           type="button"
           className="ambient-mute-btn"
-          aria-label={muted ? "Unmute ambience" : "Mute ambience"}
+          aria-label={muted ? t(language, "unmute") : t(language, "mute")}
           onClick={toggleMute}
-          title={muted ? "Unmute" : "Mute"}
+          title={muted ? t(language, "unmute") : t(language, "mute")}
         >
           {muted || volume === 0 || activeId === "none" ? (
             <VolumeX size={13} strokeWidth={1.4} />
@@ -232,10 +236,10 @@ export function AmbientSoundPanel({ currentId: externalId, onChange }: AmbientSo
               type="button"
               className={`ambient-btn ${active ? "active" : ""}`}
               onClick={() => toggleTrack(opt.id)}
-              title={`${opt.labelZh} (${opt.label}) - ${opt.note}`}
+              title={`${soundName(language, opt.id as Exclude<AmbientId, "none">)} · ${opt.note}`}
             >
               <Icon size={12} strokeWidth={1.5} />
-              <span>{opt.labelZh}</span>
+              <span>{soundName(language, opt.id as Exclude<AmbientId, "none">)}</span>
             </button>
           );
         })}
@@ -244,7 +248,7 @@ export function AmbientSoundPanel({ currentId: externalId, onChange }: AmbientSo
       {activeId !== "none" && (
         <div className="ambient-volume-row">
           <label className="ambient-volume-label" htmlFor="ambient-volume-slider">
-            <span>音量</span>
+            <span>{t(language, "volume")}</span>
             <output>{Math.round(volume * 100)}%</output>
           </label>
           <input
@@ -254,7 +258,7 @@ export function AmbientSoundPanel({ currentId: externalId, onChange }: AmbientSo
             min="0"
             max="100"
             value={muted ? 0 : Math.round(volume * 100)}
-            aria-label="Ambience volume"
+            aria-label={t(language, "volume")}
             onChange={(e) => {
               const val = Number(e.target.value) / 100;
               setVolume(val);

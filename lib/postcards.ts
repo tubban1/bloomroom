@@ -1,4 +1,5 @@
 import { Pool } from "pg";
+import { SUPABASE_CA } from "./supabase-ca";
 
 export type Postcard = {
   id: string;
@@ -17,7 +18,7 @@ function database() {
     if (!connectionString) throw new Error("Postcard database is not configured");
     pool = new Pool({
       connectionString,
-      ssl: { rejectUnauthorized: true },
+      ssl: { ca: SUPABASE_CA, rejectUnauthorized: true },
       max: 2,
       idleTimeoutMillis: 30_000,
       connectionTimeoutMillis: 5_000,

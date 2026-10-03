@@ -14,6 +14,8 @@ import {
   RotateCcw,
   Undo2,
   Redo2,
+  Share2,
+  SlidersHorizontal,
   Sparkles,
   Wind,
   X,
@@ -27,8 +29,11 @@ import {
   useState,
 } from "react";
 import * as THREE from "three";
-import { ImportedFlower, ImportedStem, IMPORTED_STEMS, flowerHeadHeight } from "./ImportedFlower";
+import { minimumStemHeight } from "../lib/stem-geometry";
+import { createNaturalStemCurve, naturalStemRadius, stemAxisRotation, stemAxisTip } from "../lib/stem-shape";
+import { ImportedFlower, ImportedStem, IMPORTED_STEMS, flowerHeadHeight, flowerHeadWidth } from "./ImportedFlower";
 import { AmbientSoundPanel } from "./AmbientSound";
+import { LANGUAGES, categoryName, colorName, flowerName, presetName, presetNote, t, vesselName, vesselNote, type Language } from "../lib/translations";
 
 type Availability = "available" | "preorder" | "play";
 type FlowerCategory = "main" | "filler" | "foliage";
@@ -61,7 +66,14 @@ type FlowerKind =
   | "snowdrop"
   | "lavender"
   | "ivy"
-  | "monstera";
+  | "monstera"
+  | "ranunculus"
+  | "narcissus"
+  | "dahlia"
+  | "amaryllis"
+  | "astrantia"
+  | "eryngium"
+  | "pine-cone";
 
 type FlowerSpec = {
   kind: FlowerKind;
@@ -86,6 +98,7 @@ type Stem = {
   leanZ: number;
   seed: number;
   colorVariant?: string;
+  visualScale?: number;
 };
 
 type BouquetRotation = { x: number; y: number; z: number };
@@ -95,9 +108,29 @@ type StudioSnapshot = {
   vessel: VesselKind;
   vesselColor: string;
   vesselOpacity: number;
+  vesselScale: number;
 };
 
 const DEFAULT_BOUQUET_ROTATION: BouquetRotation = { x: 0, y: 0, z: 0 };
+
+// Keep species distinct while making the smaller blooms readable at the default camera distance.
+const FLOWER_PRESENTATION: Partial<Record<FlowerKind, { scale?: number; frontTilt?: number }>> = {
+  ranunculus: { frontTilt: 0.85 },
+  dahlia: { frontTilt: 0.75 },
+  astrantia: { frontTilt: 0.55 },
+  anemone: { scale: 1.12 },
+  chamomile: { scale: 1.1, frontTilt: 1.15 },
+  daisy: { scale: 1.06 },
+  tulip: { scale: 1.04 },
+  rose: { frontTilt: 0.32 },
+  carnation: { frontTilt: 0.42 },
+  gerbera: { frontTilt: 0.58 },
+  poppy: { frontTilt: 0.38 },
+  hydrangea: { scale: 0.97 },
+  sunflower: { scale: 0.96 },
+  delphinium: { scale: 0.55 },
+  lotus: { scale: 0.8 },
+};
 
 const FLOWERS: FlowerSpec[] = [
   {
@@ -294,7 +327,7 @@ const FLOWERS: FlowerSpec[] = [
   {
     kind: "anemone",
     name: "Anemone",
-    latin: "Anemone hybrida",
+    latin: "Anemone",
     color: "#f5f0e8",
     center: "#2d2d32",
     category: "main",
@@ -345,13 +378,13 @@ const FLOWERS: FlowerSpec[] = [
   // ── New foliage ──────────────────────────────────────────────────────────
   {
     kind: "ivy",
-    name: "Trailing ivy",
+    name: "Ivy sprig",
     latin: "Hedera helix",
     color: "#5a7850",
     center: "#3d5638",
     category: "foliage",
     availability: "available",
-    note: "Cascading green tendrils",
+    note: "One leafy branching shoot",
   },
   {
     kind: "monstera",
@@ -363,10 +396,23 @@ const FLOWERS: FlowerSpec[] = [
     availability: "available",
     note: "Bold, fenestrated leaf",
   },
+  {"kind": "ranunculus", "name": "Ranunculus", "latin": "Ranunculus asiaticus", "color": "#f3efe5", "center": "#b59f64", "category": "main", "availability": "available", "note": "One calibrated cut unit"},
+  {"kind": "narcissus", "name": "Narcissus", "latin": "Narcissus tazetta", "color": "#f2ebdc", "center": "#b59f64", "category": "main", "availability": "available", "note": "One calibrated cut unit"},
+  {"kind": "dahlia", "name": "Dahlia", "latin": "Dahlia × hortensis", "color": "#db8a97", "center": "#b59f64", "category": "main", "availability": "available", "note": "One calibrated cut unit"},
+  {"kind": "amaryllis", "name": "Amaryllis", "latin": "Hippeastrum", "color": "#e8a3ad", "center": "#b59f64", "category": "main", "availability": "available", "note": "One calibrated cut unit"},
+  {"kind": "astrantia", "name": "Astrantia", "latin": "Astrantia major", "color": "#cc8ca8", "center": "#b59f64", "category": "filler", "availability": "available", "note": "One calibrated cut unit"},
+  {"kind": "eryngium", "name": "Sea holly", "latin": "Eryngium", "color": "#97b7c9", "center": "#b59f64", "category": "filler", "availability": "available", "note": "One calibrated cut unit"},
+  {"kind": "pine-cone", "name": "Pine cone", "latin": "Pinus", "color": "#69503a", "center": "#b59f64", "category": "foliage", "availability": "available", "note": "One calibrated cut unit"},
 ];
 
 // Cultivar colors are deliberately curated by species. Foliage stays botanical green.
 const FLOWER_COLORS: Partial<Record<FlowerKind, FlowerColorOption[]>> = {
+  "ranunculus": [{"id": "natural", "label": "Ivory cream", "color": "#f3efe5"}, {"id": "pink", "label": "Pink", "color": "#dc9cae"}, {"id": "yellow", "label": "Yellow", "color": "#e8cf76"}, {"id": "red", "label": "Red", "color": "#ba4350"}],
+  "narcissus": [{"id": "natural", "label": "Ivory cream", "color": "#f2ebdc"}],
+  "dahlia": [{"id": "natural", "label": "Pink", "color": "#db8a97"}, {"id": "cream", "label": "White", "color": "#efead9"}, {"id": "orange", "label": "Orange", "color": "#d98a53"}, {"id": "red", "label": "Red", "color": "#a84255"}],
+  "amaryllis": [{"id": "natural", "label": "Pink", "color": "#e8a3ad"}, {"id": "cream", "label": "White", "color": "#efe9da"}, {"id": "red", "label": "Red", "color": "#bd3645"}],
+  "astrantia": [{"id": "natural", "label": "Pink", "color": "#cc8ca8"}, {"id": "cream", "label": "White", "color": "#e8e7dc"}],
+  "eryngium": [{"id": "natural", "label": "Cornflower blue", "color": "#97b7c9"}],
   rose: [
     { id: "natural", label: "Dusty rose", color: "#c76577", center: "#7d2632" },
     { id: "red", label: "Velvet red", color: "#b52f42", center: "#6f1e2c" },
@@ -476,7 +522,6 @@ const FLOWER_COLORS: Partial<Record<FlowerKind, FlowerColorOption[]>> = {
   ],
   chamomile: [
     { id: "natural", label: "Cream white", color: "#f5f0d8", center: "#d4a830" },
-    { id: "yellow", label: "Golden daisy", color: "#e8d048", center: "#c07820" },
   ],
   delphinium: [
     { id: "natural", label: "Cornflower blue", color: "#8faad0", center: "#5a7aaa" },
@@ -615,39 +660,145 @@ const DEFAULT_LIGHT_DIRECTION = -42;
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
 
+const MAX_STEM_ANGLE = 60;
+const MAX_STEM_RADIANS = MAX_STEM_ANGLE * Math.PI / 180;
+
+function stemVisualScale(stem: Stem, wrapped = false) {
+  return (stem.visualScale ?? 1) * (FLOWER_PRESENTATION[stem.kind]?.scale ?? 1)
+    * (wrapped && getSpec(stem.kind).category === "foliage" ? 0.86 : 1);
+}
+
+function minimumVisibleStemHeight(kind: FlowerKind, size: number) {
+  return Math.max(minimumStemHeight(kind, size), flowerHeadHeight(kind) * size + 0.12);
+}
+
+function stemLeanLength(kind: FlowerKind, height: number, size: number) {
+  return Math.max(height, minimumVisibleStemHeight(kind, size));
+}
+
+function naturalLean(kind: FlowerKind, height: number, leanX: number, leanZ: number, size = 1) {
+  const length = stemLeanLength(kind, height, size);
+  const z = clamp(leanZ, -length * 0.5, length * 0.5);
+  const maximumX = Math.sqrt(Math.max(0, length * length - z * z)) * Math.sin(MAX_STEM_RADIANS);
+  return { x: clamp(leanX, -maximumX, maximumX), z };
+}
+
+function stemAngleDegrees(stem: Stem, wrapped = false, leanX = stem.leanX) {
+  const size = stemVisualScale(stem, wrapped);
+  const lean = naturalLean(stem.kind, stem.height, leanX, stem.leanZ, size);
+  const length = stemLeanLength(stem.kind, stem.height, size);
+  const vertical = Math.sqrt(Math.max(0, length ** 2 - lean.x ** 2 - lean.z ** 2));
+  return Math.atan2(lean.x, vertical) * 180 / Math.PI;
+}
+
+function stemWithAngle(stem: Stem, degrees: number, wrapped = false): Stem {
+  const angle = clamp(degrees, -MAX_STEM_ANGLE, MAX_STEM_ANGLE) * Math.PI / 180;
+  const size = stemVisualScale(stem, wrapped);
+  const length = stemLeanLength(stem.kind, stem.height, size);
+  const z = naturalLean(stem.kind, stem.height, 0, stem.leanZ, size).z;
+  return { ...stem, leanX: Math.sqrt(Math.max(0, length ** 2 - z ** 2)) * Math.sin(angle), leanZ: z };
+}
+
 const makeId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random()}`;
 
+function getInitialLanguage(): Language {
+  if (typeof window === "undefined") return "zh";
+  const supported: Language[] = ["zh", "en", "de", "fr"];
+  const queryLanguage = new URLSearchParams(window.location.search).get("lang");
+  if (queryLanguage && supported.includes(queryLanguage as Language)) return queryLanguage as Language;
+  const saved = window.localStorage.getItem("bloomroom-language");
+  if (saved && supported.includes(saved as Language)) return saved as Language;
+  const browserLanguage = window.navigator.language.toLowerCase();
+  if (browserLanguage.startsWith("de")) return "de";
+  if (browserLanguage.startsWith("fr")) return "fr";
+  if (browserLanguage.startsWith("en")) return "en";
+  return "zh";
+}
+
 function getSpec(kind: FlowerKind) {
   return FLOWERS.find((item) => item.kind === kind) ?? FLOWERS[0];
 }
 
-const AUTO_PLACEMENT_SLOTS = [
-  { leanX: 0, height: 2.82, z: 0 },
-  { leanX: -0.56, height: 2.94, z: -0.1 },
-  { leanX: 0.62, height: 2.68, z: 0.12 },
-  { leanX: -1.02, height: 2.76, z: 0.16 },
-  { leanX: 1.04, height: 2.84, z: -0.16 },
-  { leanX: -0.18, height: 2.46, z: 0.18 },
-  { leanX: 0.22, height: 3.02, z: -0.18 },
-  { leanX: -0.76, height: 2.56, z: 0.02 },
-  { leanX: 1.16, height: 2.64, z: 0.1 },
-  { leanX: -1.2, height: 2.62, z: -0.08 },
-  { leanX: 0.52, height: 2.48, z: -0.04 },
-  { leanX: -0.34, height: 3.04, z: 0.04 },
-];
+const AUTO_PLACEMENT_SLOTS: Record<FlowerCategory, { leanX: number; height: number; z: number }[]> = {
+  main: [
+    { leanX: 0, height: 2.82, z: 0.08 },
+    { leanX: -0.48, height: 2.96, z: 0.02 },
+    { leanX: 0.55, height: 2.68, z: 0.13 },
+    { leanX: -0.86, height: 2.69, z: -0.03 },
+    { leanX: 0.85, height: 2.9, z: 0.04 },
+    { leanX: -0.18, height: 2.5, z: 0.17 },
+    { leanX: 0.22, height: 3.05, z: -0.08 },
+    { leanX: -0.67, height: 2.58, z: 0.09 },
+  ],
+  filler: [
+    { leanX: -0.31, height: 2.48, z: 0.14 },
+    { leanX: 0.39, height: 2.57, z: 0.1 },
+    { leanX: -0.72, height: 2.72, z: -0.03 },
+    { leanX: 0.71, height: 2.39, z: 0.13 },
+    { leanX: -0.08, height: 2.95, z: -0.11 },
+    { leanX: 0.17, height: 2.31, z: 0.2 },
+  ],
+  foliage: [
+    { leanX: -1.05, height: 2.56, z: -0.14 },
+    { leanX: 1.08, height: 2.63, z: -0.17 },
+    { leanX: -0.78, height: 2.92, z: -0.19 },
+    { leanX: 0.81, height: 2.85, z: -0.16 },
+    { leanX: -0.38, height: 2.44, z: -0.11 },
+    { leanX: 0.46, height: 2.96, z: -0.18 },
+  ],
+};
 
 function stemInsertionY(vessel: VesselKind) {
   return vessel === "naked" ? 0.36 : vessel === "paper" || vessel === "canvas" ? 0.58 : 1.43;
 }
 
-function autoPlacementPoint(kind: FlowerKind, index: number, vessel: VesselKind) {
-  const slot = AUTO_PLACEMENT_SLOTS[index % AUTO_PLACEMENT_SLOTS.length];
+function isWrappedVessel(vessel: VesselKind) {
+  return vessel === "paper" || vessel === "canvas";
+}
+
+function wrapLeanBounds(kind: FlowerKind): [number, number] {
+  if (kind === "eucalyptus" || kind === "seeded-eucalyptus") return [-0.72, -0.08];
+  if (kind === "fern") return [0.02, 0.68];
+  if (kind === "ivy") return [0.38, 0.55];
+  if (kind === "monstera") return [-0.32, 0.32];
   const category = getSpec(kind).category;
-  const heightOffset = category === "filler" ? -0.18 : category === "foliage" ? 0.02 : 0.12;
-  return new THREE.Vector3(0.72 + slot.leanX, stemInsertionY(vessel) + slot.height + heightOffset, slot.z);
+  return category === "foliage" ? [-0.46, 0.46] : category === "filler" ? [-0.58, 0.58] : [-0.72, 0.72];
+}
+
+function fitStemToVessel(stem: Stem, vessel: VesselKind): Stem {
+  const size = stemVisualScale(stem, isWrappedVessel(vessel));
+  const minimumHeight = minimumVisibleStemHeight(stem.kind, size);
+  if (stem.height < minimumHeight) stem = stemWithAngle({ ...stem, height: minimumHeight }, stemAngleDegrees(stem, isWrappedVessel(vessel)), isWrappedVessel(vessel));
+  if (!isWrappedVessel(vessel)) return stem;
+  const [minLean, maxLean] = wrapLeanBounds(stem.kind);
+  const category = getSpec(stem.kind).category;
+  return {
+    ...stem,
+    x: stem.kind === "ivy" ? clamp(stem.x, 0.16, 0.21) : clamp(stem.x, -0.06, 0.06),
+    z: category === "main" ? clamp(stem.z, -0.18, 0.04) : clamp(stem.z, -0.28, -0.18),
+    leanX: clamp(stem.leanX, minLean, maxLean),
+    leanZ: clamp(stem.leanZ, -0.22, -0.08),
+  };
+}
+
+function autoPlacementPoint(kind: FlowerKind, stems: Stem[], vessel: VesselKind, vesselScale = 1) {
+  const category = getSpec(kind).category;
+  const slots = AUTO_PLACEMENT_SLOTS[category];
+  const index = stems.filter((stem) => getSpec(stem.kind).category === category).length;
+  const slot = slots[index % slots.length];
+  const layer = Math.floor(index / slots.length);
+  const spread = isWrappedVessel(vessel) ? 0.58 : 1;
+  // The ivy asset branches left from its cut end; give it a near-upright
+  // insertion so the source branch does not get tilted a second time.
+  if (kind === "delphinium") {
+    const spikeIndex = stems.filter((stem) => stem.kind === kind).length;
+    return new THREE.Vector3(0.72 + (spikeIndex % 2 ? 0.8 : -0.8) * spread, stemInsertionY(vessel) * vesselScale + 3.05, -0.24);
+  }
+  const leanX = kind === "ivy" ? -0.18 : slot.leanX + (layer % 2 ? 0.13 : 0);
+  return new THREE.Vector3(0.72 + leanX * spread, stemInsertionY(vessel) * vesselScale + slot.height - layer * 0.06, slot.z - layer * 0.04);
 }
 
 function FlowerStem({
@@ -656,6 +807,7 @@ function FlowerStem({
   wind,
   selected,
   ghost = false,
+  wrapped = false,
   onSelect,
   onDragStart,
 }: {
@@ -664,6 +816,7 @@ function FlowerStem({
   wind: number;
   selected?: boolean;
   ghost?: boolean;
+  wrapped?: boolean;
   onSelect?: (id: string) => void;
   onDragStart?: (id: string, event: ThreeEvent<PointerEvent>) => void;
 }) {
@@ -674,41 +827,24 @@ function FlowerStem({
   const colorOption = getFlowerColor(stem.kind, stem.colorVariant);
   const bloomColor = colorOption?.color ?? spec.color;
   const importedTint = colorOption && (
-    (stem.kind !== "peony" && stem.kind !== "hydrangea" && stem.kind !== "daisy") ||
+    (!["ranunculus", "narcissus", "amaryllis", "astrantia", "eryngium"].includes(stem.kind) && stem.kind !== "peony" && stem.kind !== "hydrangea" && stem.kind !== "daisy" && stem.kind !== "anemone" && stem.kind !== "chamomile") ||
     (stem.colorVariant && stem.colorVariant !== "natural")
   ) ? bloomColor : undefined;
   const displayHeight = stem.height;
-  const headHeight = flowerHeadHeight(stem.kind);
+  const visualScale = stemVisualScale(stem, wrapped);
+  const headHeight = flowerHeadHeight(stem.kind) * visualScale;
+  const headSelectionRadius = Math.max(flowerHeadWidth(stem.kind), flowerHeadHeight(stem.kind)) * visualScale / 2 + 0.08;
   const stalkHeight = Math.max(0.1, displayHeight - headHeight);
-  const stemLeanMatrix = useMemo(() => new THREE.Matrix4().set(
-    1, stem.leanX / displayHeight, 0, 0,
-    0, 1, 0, 0,
-    0, stem.leanZ / displayHeight, 1, 0,
-    0, 0, 0, 1,
-  ), [stem.leanX, stem.leanZ, displayHeight]);
-
+  const lean = naturalLean(stem.kind, displayHeight, stem.leanX, stem.leanZ, visualScale);
+  const stemLeanQuaternion = stemAxisRotation(displayHeight, lean.x, lean.z);
+  const importedTouchPoint = new THREE.Vector3(0, displayHeight * 0.82, 0).applyQuaternion(stemLeanQuaternion);
   const curve = useMemo(
-    () =>
-      new THREE.CatmullRomCurve3([
-        new THREE.Vector3(0, 0, 0),
-        new THREE.Vector3(
-          stem.leanX * 0.16,
-          stalkHeight * 0.34,
-          stem.leanZ * 0.13,
-        ),
-        new THREE.Vector3(
-          stem.leanX * 0.48,
-          stalkHeight * 0.7,
-          stem.leanZ * 0.4,
-        ),
-        new THREE.Vector3(
-          stem.leanX,
-          stalkHeight,
-          stem.leanZ,
-        ),
-      ]),
-    [stalkHeight, stem.leanX, stem.leanZ],
+    () => createNaturalStemCurve(stem.kind, stalkHeight, stem.seed),
+    [stem.kind, stalkHeight, stem.seed],
   );
+  const headAttachmentRotation = useMemo(() => new THREE.Quaternion().setFromUnitVectors(
+    new THREE.Vector3(0, 1, 0), curve.getTangent(1).normalize(),
+  ), [curve]);
 
   const tip = useMemo(() => curve.getPoint(1), [curve]);
 
@@ -752,28 +888,44 @@ function FlowerStem({
       onPointerOver={(e) => { if (!ghost) { e.stopPropagation(); document.body.style.cursor = "grab"; } }}
       onPointerOut={() => { document.body.style.cursor = ""; }}
     >
+      {stemBaseY > 0.1 && !ghost && <mesh position={[0, -(stemBaseY - 0.1) / 2, 0]} castShadow>
+        <cylinderGeometry args={[0.018, 0.018, stemBaseY - 0.1, 8]} />
+        <meshStandardMaterial color="#617356" roughness={0.82} />
+      </mesh>}
       {IMPORTED_STEMS[spec.kind] ? (
         <>
-          <group ref={importedVisual} matrix={stemLeanMatrix} matrixAutoUpdate={false}>
-              <ImportedStem kind={spec.kind} ghost={ghost} height={displayHeight} bloomColor={importedTint} fallback={null} />
+          <group ref={importedVisual} quaternion={stemLeanQuaternion}>
+              <ImportedStem kind={spec.kind} ghost={ghost} height={displayHeight} visualScale={visualScale} bloomColor={importedTint} fallback={null} />
           </group>
+          {!ghost && <mesh position={importedTouchPoint}>
+            <sphereGeometry args={[clamp(displayHeight * 0.15, 0.24, 0.46), 10, 8]} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+          </mesh>}
           {selected && !ghost && <mesh ref={importedSelectionRing} visible={false} raycast={() => null}>
-            <torusGeometry args={[0.52, 0.008, 6, 64]} /><meshBasicMaterial color="#85906d" transparent opacity={0.65} />
+            <torusGeometry args={[clamp(displayHeight * visualScale * 0.16, 0.13, 0.4), 0.008, 6, 64]} /><meshBasicMaterial color="#85906d" transparent opacity={0.65} />
           </mesh>}
         </>
       ) : (
-        <>
+        <group quaternion={stemLeanQuaternion}>
           <mesh castShadow>
-            <tubeGeometry args={[curve, 28, 0.021, 7, false]} />
+            <tubeGeometry args={[curve, 28, naturalStemRadius(stem.kind, visualScale), 8, false]} />
             <meshStandardMaterial color="#617356" roughness={0.82} transparent={ghost} opacity={ghost ? 0.38 : 1} />
           </mesh>
           <group position={[tip.x, tip.y, tip.z]}>
-            <ImportedFlower kind={spec.kind} ghost={ghost} bloomColor={importedTint} fallback={null} />
+            <group quaternion={headAttachmentRotation}>
+              <group scale={visualScale} rotation={[FLOWER_PRESENTATION[stem.kind]?.frontTilt ?? 0, 0, 0]}>
+                <ImportedFlower kind={spec.kind} ghost={ghost} bloomColor={importedTint} fallback={null} />
+              </group>
+            </group>
             {selected && !ghost && <mesh position={[0, headHeight / 2, 0.08]}>
-              <torusGeometry args={[0.5, 0.008, 6, 64]} /><meshBasicMaterial color="#85906d" transparent opacity={0.65} />
+              <torusGeometry args={[headSelectionRadius, 0.008, 6, 64]} /><meshBasicMaterial color="#85906d" transparent opacity={0.65} />
             </mesh>}
           </group>
-        </>
+          {!ghost && <mesh position={[tip.x, tip.y + headHeight * 0.48, tip.z]}>
+            <sphereGeometry args={[Math.max(headSelectionRadius, 0.27), 10, 8]} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+          </mesh>}
+        </group>
       )}
     </group>
   );
@@ -786,12 +938,17 @@ function paperWrapGeometry(flowerCount: number) {
   const radialSteps = 48;
   const heightSteps = 12;
   const fullness = clamp((flowerCount - 1) / 8, 0, 1);
-  const topHeight = 3.05 + fullness;
+  // Let added blooms broaden the paper more than they raise its rim, so the
+  // flower faces remain visible as the bouquet fills out.
+  const topHeight = 3.05 + fullness * 0.5;
   const flare = 0.73 + fullness * 0.57;
   for (let i = 0; i <= radialSteps; i++) {
     const angle = -Math.PI + i / radialSteps * Math.PI * 2;
     const front = (1 + Math.cos(angle)) / 2;
-    const top = topHeight - (0.58 + fullness * 0.7) * Math.pow(front, 4) + 0.06 * Math.cos(angle * 3);
+    const sideDip = (0.34 + fullness * 0.28) * Math.pow(Math.abs(Math.sin(angle)), 6);
+    // A broad, low front opening frames the blooms and foliage instead of
+    // hiding them behind a tall paper face. Keep the back high for the wrap silhouette.
+    const top = topHeight - (0.9 + fullness * 0.78) * Math.pow(front, 2.3) - sideDip + 0.06 * Math.cos(angle * 3);
     for (let j = 0; j <= heightSteps; j++) {
       const t = j / heightSteps;
       const fold = 1 + (0.017 * Math.cos(angle * 9) + 0.009 * Math.sin(angle * 15)) * t;
@@ -830,8 +987,9 @@ function Vase({ kind, vesselColor, vesselOpacity, flowerCount = 1 }: { kind: Ves
     return [left, right];
   }, []);
   const rimRadius = kind === "bowl" ? 0.7 : kind === "bud" ? 0.3 : kind === "mug" ? 0.49 : kind === "footed" ? 0.55 : 0.45;
-  const alpha = clamp(vesselOpacity / 100, 0.25, 1);
-  const alphaProps = { transparent: alpha < 1, opacity: alpha, depthWrite: alpha === 1 };
+  const alpha = clamp(vesselOpacity / 100, 0, 1);
+  // Keep alpha blending enabled so slider updates do not reuse an opaque shader.
+  const alphaProps = { transparent: true, opacity: alpha, depthWrite: alpha === 1 };
   const wrapGeometry = useMemo(() => paperWrapGeometry(flowerCount), [flowerCount]);
 
   if (kind === "naked") {
@@ -847,10 +1005,10 @@ function Vase({ kind, vesselColor, vesselOpacity, flowerCount = 1 }: { kind: Ves
 
   if (kind === "paper" || kind === "canvas") {
     return <group>
-      <mesh geometry={wrapGeometry} castShadow receiveShadow>
+      <mesh geometry={wrapGeometry} castShadow={alpha === 1} receiveShadow>
         <meshPhysicalMaterial {...alphaProps} color={vesselColor} roughness={0.96} side={THREE.DoubleSide} flatShading />
       </mesh>
-      <mesh position={[0, 0.32, 0]} castShadow>
+      <mesh position={[0, 0.32, 0]} castShadow={alpha === 1}>
         <cylinderGeometry args={[0.27, 0.34, 0.56, 12, 1]} />
         <meshStandardMaterial {...alphaProps} color={vesselColor} roughness={1} flatShading side={THREE.DoubleSide} />
       </mesh>
@@ -879,15 +1037,12 @@ function Vase({ kind, vesselColor, vesselOpacity, flowerCount = 1 }: { kind: Ves
 
   return (
     <group>
-      <mesh castShadow receiveShadow>
+      <mesh castShadow={alpha === 1} receiveShadow>
         <latheGeometry args={[points, 48]} />
         <meshPhysicalMaterial {...alphaProps} color={vesselColor} roughness={0.62} metalness={0} clearcoat={0.16} clearcoatRoughness={0.72} />
       </mesh>
       <mesh position={[0, 1.414, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[rimRadius, 0.032, 10, 48]} /><meshStandardMaterial color="#b8b09f" roughness={0.7} />
-      </mesh>
-      <mesh position={[0, 1.408, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[rimRadius - 0.035, 48]} /><meshStandardMaterial color="#6d7461" roughness={0.96} />
+        <torusGeometry args={[rimRadius, 0.032, 10, 48]} /><meshStandardMaterial {...alphaProps} color={vesselColor} roughness={0.7} />
       </mesh>
       {kind === "mug" && <mesh position={[0.53, 0.78, 0]} scale={[0.74, 0.74, 0.22]}>
         <torusGeometry args={[0.45, 0.085, 10, 32]} /><meshPhysicalMaterial {...alphaProps} color={vesselColor} roughness={0.62} clearcoat={0.16} />
@@ -897,8 +1052,16 @@ function Vase({ kind, vesselColor, vesselOpacity, flowerCount = 1 }: { kind: Ves
 }
 
 function PreviewCanvas({ className, children }: { className: string; children: React.ReactNode }) {
-  return <div className={`asset-preview ${className}`} aria-hidden="true">
-    <Canvas
+  const element = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (!element.current) return;
+    const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting), { rootMargin: "80px" });
+    observer.observe(element.current);
+    return () => observer.disconnect();
+  }, []);
+  return <div ref={element} className={`asset-preview ${className}`} aria-hidden="true">
+    {visible && <Canvas
       frameloop="demand"
       dpr={1}
       camera={{ position: [0, 0.65, 5.6], fov: 27, near: 0.1, far: 20 }}
@@ -908,7 +1071,7 @@ function PreviewCanvas({ className, children }: { className: string; children: R
       <ambientLight intensity={0.7} />
       <directionalLight position={[3, 5, 5]} intensity={1.9} />
       {children}
-    </Canvas>
+    </Canvas>}
   </div>;
 }
 
@@ -947,11 +1110,11 @@ function VesselThumbnail({ option, vesselColor, vesselOpacity }: {
       <Vase kind={option.kind} vesselColor={vesselColor} vesselOpacity={vesselOpacity} flowerCount={option.category === "bouquet" ? sampleKinds.length : 0} />
       {option.category === "bouquet" ? sampleKinds.map((kind, index) => <FlowerStem
         key={`${kind}-${index}`}
-        stem={{ id: `wrap-${option.kind}-${index}`, kind, x: (index - (sampleKinds.length - 1) / 2) * 0.08,
+        stem={fitStemToVessel({ id: `wrap-${option.kind}-${index}`, kind, x: (index - (sampleKinds.length - 1) / 2) * 0.08,
           z: (index % 2 ? 1 : -1) * 0.08, height: 2.35 + (index % 2) * 0.18,
-          leanX: (index - (sampleKinds.length - 1) / 2) * 0.34, leanZ: index % 2 ? 0.05 : -0.04, seed: index * 1.2 }}
+          leanX: (index - (sampleKinds.length - 1) / 2) * 0.34, leanZ: index % 2 ? 0.05 : -0.04, seed: index * 1.2 }, option.kind)}
         stemBaseY={stemBaseY}
-       
+        wrapped={wrapped}
         wind={0}
       />) : null}
     </group>
@@ -967,9 +1130,9 @@ function BouquetThumbnail({ preset }: { preset: (typeof BOUQUET_PRESETS)[number]
       <Vase kind={preset.vessel} vesselColor={getDefaultVesselColor(preset.vessel)} vesselOpacity={100} flowerCount={preset.stems.length} />
       {preset.stems.map((stem, index) => <FlowerStem
         key={`${stem.kind}-${index}`}
-        stem={{ ...stem, id: `preset-${preset.id}-${index}`, x: (index - (preset.stems.length - 1) / 2) * 0.055, seed: index * 1.73 + 1.2 }}
+        stem={fitStemToVessel({ ...stem, id: `preset-${preset.id}-${index}`, x: (index - (preset.stems.length - 1) / 2) * 0.055, seed: index * 1.73 + 1.2 }, preset.vessel)}
         stemBaseY={stemBaseY}
-       
+        wrapped={wrapped}
         wind={0}
       />)}
     </group>
@@ -981,9 +1144,12 @@ function StemAdjustmentControls({
   stems,
   colors,
   colorVariant,
+  language,
+  wrapped,
   onSelectStem,
   onStartChange,
   onHeightChange,
+  onSizeChange,
   onAngleChange,
   onColorChange,
   onRemove,
@@ -993,60 +1159,89 @@ function StemAdjustmentControls({
   stems: Stem[];
   colors: FlowerColorOption[];
   colorVariant: string;
+  language: Language;
+  wrapped: boolean;
   onSelectStem: (id: string) => void;
   onStartChange: () => void;
   onHeightChange: (value: number) => void;
+  onSizeChange: (value: number) => void;
   onAngleChange: (value: number) => void;
   onColorChange: (variant: string) => void;
   onRemove: () => void;
   onDone: () => void;
 }) {
-  return <div className="selection-card" aria-label="Selected stem controls">
+  return <div className="selection-card" aria-label={t(language, "adjust")}>
     <div className="selection-title">
       <div>
-        <strong>{getSpec(stem.kind).name}</strong>
-        <div className="selection-meta">Drag the flower to reshape the line</div>
+        <strong>{flowerName(language, stem.kind)}</strong>
+        <div className="selection-meta">{t(language, "adjustHint")}</div>
       </div>
-      <button type="button" className="selection-done" aria-label="Done adjusting" onClick={onDone}><Check size={15} strokeWidth={1.5} /></button>
+      <button type="button" className="selection-done" aria-label={t(language, "done")} onClick={onDone}><Check size={15} strokeWidth={1.5} /></button>
     </div>
     {stems.length > 1 ? <label className="selection-stem-picker" htmlFor="selected-stem">
-      <span>Flower to adjust</span>
+      <span>{t(language, "stemToAdjust")}</span>
       <select id="selected-stem" value={stem.id} onChange={(event) => onSelectStem(event.target.value)}>
-        {stems.map((item, index) => <option key={item.id} value={item.id}>{String(index + 1).padStart(2, "0")} · {getSpec(item.kind).name}</option>)}
+        {stems.map((item, index) => <option key={item.id} value={item.id}>{String(index + 1).padStart(2, "0")} · {flowerName(language, item.kind)}</option>)}
       </select>
     </label> : null}
     <div className="micro-control">
-      <label htmlFor="stem-height"><span>Stem height</span><span>{Math.round(stem.height * 28)} cm</span></label>
+      <label htmlFor="stem-height"><span>{t(language, "stemHeight")}</span><span>{Math.round(stem.height * 28)} cm</span></label>
       <input onPointerDown={onStartChange} onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) onStartChange(); }}
-        id="stem-height" className="range" type="range" min="0.8" max="3.2" step="0.01" value={stem.height}
+        id="stem-height" className="range" type="range" min={minimumVisibleStemHeight(stem.kind, stemVisualScale(stem, wrapped))} max="3.2" step="0.01" value={stem.height}
         onChange={(event) => onHeightChange(Number(event.target.value))} />
     </div>
     <div className="micro-control">
-      <label htmlFor="stem-angle"><span>Lean / angle</span><span>{Math.round(Math.atan2(stem.leanX, Math.max(0.8, stem.height)) * 180 / Math.PI)}°</span></label>
-      <input onPointerDown={onStartChange} onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) onStartChange(); }}
-        id="stem-angle" className="range" type="range" min="-1.5" max="1.5" step="0.01" value={stem.leanX}
+      <label htmlFor="stem-visual-size"><span>{getSpec(stem.kind).category === "foliage" ? t(language, "leafSize") : t(language, "flowerSize")}</span><span>{Math.round((stem.visualScale ?? 1) * 100)}%</span></label>
+      <input onPointerDown={onStartChange} onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"].includes(event.key)) onStartChange(); }}
+        id="stem-visual-size" className="range" type="range" min="75" max="125" step="1" value={Math.round((stem.visualScale ?? 1) * 100)}
+        onChange={(event) => onSizeChange(Number(event.target.value) / 100)} />
+    </div>
+    <div className="micro-control">
+      <label htmlFor="stem-angle"><span>{t(language, "lean")}</span><span>{Math.round(stemAngleDegrees(stem, wrapped))}°</span></label>
+      <input onPointerDown={onStartChange} onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"].includes(event.key)) onStartChange(); }}
+        id="stem-angle" className="range" type="range" min={wrapped ? Math.ceil(stemAngleDegrees(stem, true, wrapLeanBounds(stem.kind)[0])) : -MAX_STEM_ANGLE} max={wrapped ? Math.floor(stemAngleDegrees(stem, true, wrapLeanBounds(stem.kind)[1])) : MAX_STEM_ANGLE} step="1" value={Math.round(stemAngleDegrees(stem, wrapped))}
         onChange={(event) => onAngleChange(Number(event.target.value))} />
     </div>
     {colors.length > 0 ? <div className="micro-control color-control">
-      <span className="color-label">Flower color</span>
-      <div className="color-options" role="group" aria-label="Flower color">
+      <span className="color-label">{t(language, "flowerColor")}</span>
+      <div className="color-options" role="group" aria-label={t(language, "flowerColor")}>
         {colors.map((option) => <button key={option.id} type="button" className="color-option"
           style={{ "--petal-color": option.color } as React.CSSProperties}
-          aria-label={option.label} aria-pressed={colorVariant === option.id} title={option.label}
+          aria-label={colorName(language, option.label)} aria-pressed={colorVariant === option.id} title={colorName(language, option.label)}
           onClick={() => onColorChange(option.id)}><span /></button>)}
       </div>
     </div> : null}
-    <button type="button" className="remove-button" onClick={onRemove}>Remove this stem</button>
+    <button type="button" className="remove-button" onClick={onRemove}>{t(language, "removeStem")}</button>
   </div>;
 }
 
-function CameraRig() {
+function CameraRig({ bouquetRef, dragging }: { bouquetRef: React.RefObject<THREE.Group | null>; dragging: boolean }) {
   const { size } = useThree();
+  const cameraRef = useRef<THREE.OrthographicCamera>(null);
+  const bounds = useMemo(() => new THREE.Box3(), []);
+  const defaultZoom = size.height / (size.width <= 760 ? 6.8 : 7.8);
+  useFrame((_, delta) => {
+    if (!cameraRef.current || dragging) return;
+    let targetZoom = defaultZoom;
+    if (size.width <= 760 && bouquetRef.current) {
+      bounds.setFromObject(bouquetRef.current);
+      if (!bounds.isEmpty()) {
+        const halfWidth = Math.max(Math.abs(bounds.min.x - 0.72), Math.abs(bounds.max.x - 0.72));
+        targetZoom = Math.min(defaultZoom, (size.width - 32) / (halfWidth * 2 + 0.4));
+      }
+    }
+    const nextZoom = THREE.MathUtils.damp(cameraRef.current.zoom, targetZoom, 10, delta);
+    if (Math.abs(nextZoom - cameraRef.current.zoom) > 0.001) {
+      cameraRef.current.zoom = nextZoom;
+      cameraRef.current.updateProjectionMatrix();
+    }
+  });
   return <OrthographicCamera
+    ref={cameraRef}
     makeDefault
-    position={[0.72, 4, 12]}
+    position={[0.72, 3.65, 12]}
     rotation={[-Math.atan2(0.75, 12), 0, 0]}
-    zoom={size.height / 10.5}
+    zoom={defaultZoom}
     near={0.1}
     far={30}
   />;
@@ -1086,6 +1281,7 @@ function StudioScene({
   vessel,
   vesselColor,
   vesselOpacity,
+  vesselScale,
   bouquetRotation,
   held,
   selectedId,
@@ -1098,6 +1294,7 @@ function StudioScene({
   onRotateStart,
   onRotate,
   projectPointerRef,
+  captureSceneRef,
 }: {
   stems: Stem[];
   lightWarmth: number;
@@ -1106,6 +1303,7 @@ function StudioScene({
   vessel: VesselKind;
   vesselColor: string;
   vesselOpacity: number;
+  vesselScale: number;
   bouquetRotation: BouquetRotation;
   held: FlowerKind | null;
   selectedId: string | null;
@@ -1118,16 +1316,24 @@ function StudioScene({
   onRotateStart: () => void;
   onRotate: (rotation: BouquetRotation) => void;
   projectPointerRef: React.RefObject<((x: number, y: number) => THREE.Vector3 | null) | null>;
+  captureSceneRef: React.RefObject<(() => string) | null>;
 }) {
   const bouquetGroupRef = useRef<THREE.Group>(null);
   const wrapped = vessel === "paper" || vessel === "canvas";
-  const stemBaseY = vessel === "naked" ? 0.36 : wrapped ? 0.58 : 1.43;
+  const stemBaseY = stemInsertionY(vessel) * vesselScale;
   const canvasElementRef = useRef<HTMLCanvasElement | null>(null);
   const [hoverPoint, setHoverPoint] = useState(
     () => new THREE.Vector3(0.72, 3.7, 0),
   );
 
-  const { camera, gl } = useThree();
+  const { camera, gl, scene } = useThree();
+  useEffect(() => {
+    captureSceneRef.current = () => {
+      gl.render(scene, camera);
+      return gl.domElement.toDataURL("image/png");
+    };
+    return () => { captureSceneRef.current = null; };
+  }, [camera, gl, scene, captureSceneRef]);
   const setCanvasCursor = useCallback((cursor: string) => {
     if (canvasElementRef.current) canvasElementRef.current.style.cursor = cursor;
   }, []);
@@ -1165,7 +1371,8 @@ function StudioScene({
   const beginDrag = (id: string, event: ThreeEvent<PointerEvent>) => {
     if (held) { onPlace(pointToStudioSpace(event.point)); return; }
     const stem = stems.find((item) => item.id === id)!;
-    const localTip = new THREE.Vector3(stem.x + stem.leanX, stemBaseY + stem.height, stem.z + stem.leanZ);
+    const lean = naturalLean(stem.kind, stem.height, stem.leanX, stem.leanZ, stemVisualScale(stem, wrapped));
+    const localTip = stemAxisTip(stem.height, lean.x, lean.z).add(new THREE.Vector3(stem.x, stemBaseY, stem.z));
     const tip = bouquetGroupRef.current?.localToWorld(localTip.clone()) ?? localTip.add(new THREE.Vector3(0.72, 0.06, 0));
     const rotation = bouquetGroupRef.current?.getWorldQuaternion(new THREE.Quaternion()) ?? new THREE.Quaternion();
     const planeNormal = new THREE.Vector3(0, 0, 1).applyQuaternion(rotation);
@@ -1278,7 +1485,7 @@ function StudioScene({
 
   return (
     <>
-      <CameraRig />
+      <CameraRig bouquetRef={bouquetGroupRef} dragging={Boolean(dragId)} />
       <fog attach="fog" args={[sceneColors.fog, 11, 20]} />
       <hemisphereLight args={["#fff7ec", "#8c9276", 0.8]} />
       <ambientLight
@@ -1333,13 +1540,13 @@ function StudioScene({
           if (!rotationDrag.current) setCanvasCursor("");
         }}
       >
-        <Vase key={vessel} kind={vessel} vesselColor={vesselColor} vesselOpacity={vesselOpacity} flowerCount={stems.length} />
+        <group scale={vesselScale}><Vase key={vessel} kind={vessel} vesselColor={vesselColor} vesselOpacity={vesselOpacity} flowerCount={stems.length} /></group>
         {stems.map((stem) => (
           <FlowerStem
             key={stem.id}
             stem={stem}
             stemBaseY={stemBaseY}
-           
+            wrapped={wrapped}
             wind={wind}
             selected={selectedId === stem.id}
             onSelect={onSelect}
@@ -1371,16 +1578,16 @@ function StudioScene({
   );
 }
 
-function encodeBouquet(stems: Stem[], rotation: BouquetRotation, vessel: VesselKind, vesselColor: string, vesselOpacity: number) {
-  const compact = stems.map(({ kind, x, z, height, leanX, leanZ, seed, colorVariant }) => ({ kind, x, z, height, leanX, leanZ, seed, colorVariant }));
-  const raw = encodeURIComponent(JSON.stringify({ stems: compact, rotation, vessel, vesselColor, vesselOpacity }));
+function encodeBouquet(stems: Stem[], rotation: BouquetRotation, vessel: VesselKind, vesselColor: string, vesselOpacity: number, vesselScale: number) {
+  const compact = stems.map(({ kind, x, z, height, leanX, leanZ, seed, colorVariant, visualScale }) => ({ kind, x, z, height, leanX, leanZ, seed, colorVariant, visualScale }));
+  const raw = encodeURIComponent(JSON.stringify({ stems: compact, rotation, vessel, vesselColor, vesselOpacity, vesselScale }));
   return btoa(raw)
     .replaceAll("+", "-")
     .replaceAll("/", "_")
     .replaceAll("=", "");
 }
 
-function decodeBouquet(value: string): { stems: Stem[]; rotation: BouquetRotation; vessel: VesselKind; vesselColor: string; vesselOpacity: number } | null {
+function decodeBouquet(value: string): { stems: Stem[]; rotation: BouquetRotation; vessel: VesselKind; vesselColor: string; vesselOpacity: number; vesselScale: number } | null {
   try {
     let normalized = value
       .replaceAll("-", "+")
@@ -1390,7 +1597,7 @@ function decodeBouquet(value: string): { stems: Stem[]; rotation: BouquetRotatio
     const parsed = JSON.parse(decoded) as unknown;
     const shared = Array.isArray(parsed)
       ? { stems: parsed, rotation: DEFAULT_BOUQUET_ROTATION, vessel: "classic" as VesselKind }
-      : parsed as { stems?: unknown; rotation?: Partial<BouquetRotation>; vessel?: unknown; vesselColor?: unknown; vesselOpacity?: unknown } | null;
+      : parsed as { stems?: unknown; rotation?: Partial<BouquetRotation>; vessel?: unknown; vesselColor?: unknown; vesselOpacity?: unknown; vesselScale?: unknown } | null;
     const parsedStems = shared && "stems" in shared ? shared.stems : null;
     const rotation = shared && "rotation" in shared && shared.rotation
       ? shared.rotation
@@ -1402,20 +1609,22 @@ function decodeBouquet(value: string): { stems: Stem[]; rotation: BouquetRotatio
       ? shared.vesselColor
       : getDefaultVesselColor(vessel);
     const vesselOpacity = shared && typeof shared.vesselOpacity === "number" && Number.isFinite(shared.vesselOpacity)
-      ? clamp(shared.vesselOpacity, 25, 100)
+      ? clamp(shared.vesselOpacity, 0, 100)
       : 100;
     if (!Array.isArray(parsedStems)
       || ![rotation.x, rotation.y, rotation.z].every((value) => typeof value === "number" && Number.isFinite(value))
       || parsedStems.some((stem) => !stem || !FLOWERS.some((flower) => flower.kind === stem.kind)
       || ![stem.x, stem.z, stem.height, stem.leanX, stem.leanZ, stem.seed].every((value) => typeof value === "number" && Number.isFinite(value))
-      || (stem.colorVariant !== undefined && (typeof stem.colorVariant !== "string" || !getFlowerColors(stem.kind).some((option) => option.id === stem.colorVariant))))) return null;
+      || (stem.colorVariant !== undefined && (typeof stem.colorVariant !== "string" || !getFlowerColors(stem.kind).some((option) => option.id === stem.colorVariant)))
+      || (stem.visualScale !== undefined && (typeof stem.visualScale !== "number" || !Number.isFinite(stem.visualScale))))) return null;
     return {
-      stems: parsedStems.slice(0, 24).map((stem) => ({
+      stems: parsedStems.slice(0, 24).map((stem) => fitStemToVessel({
         ...stem,
         x: clamp(stem.x, -0.3, 0.3), z: clamp(stem.z, -0.3, 0.3),
-        height: clamp(stem.height, 0.8, 3.2), leanX: clamp(stem.leanX, -1.7, 1.7), leanZ: clamp(stem.leanZ, -0.5, 0.5),
+        height: clamp(stem.height, 0.8, 3.2), leanX: clamp(stem.leanX, -3.2 * Math.tan(MAX_STEM_RADIANS), 3.2 * Math.tan(MAX_STEM_RADIANS)), leanZ: clamp(stem.leanZ, -0.5, 0.5),
+        visualScale: clamp(stem.visualScale ?? 1, 0.75, 1.25),
         id: makeId(),
-      })),
+      }, vessel)),
       rotation: {
         x: clamp(rotation.x ?? 0, -35, 35),
         y: clamp(rotation.y ?? 0, -180, 180),
@@ -1424,19 +1633,22 @@ function decodeBouquet(value: string): { stems: Stem[]; rotation: BouquetRotatio
       vessel,
       vesselColor,
       vesselOpacity,
+      vesselScale: shared && typeof shared.vesselScale === "number" && Number.isFinite(shared.vesselScale) ? clamp(shared.vesselScale, 0.7, 1.3) : 1,
     };
   } catch {
     return null;
   }
 }
 
-async function drawPostcard(imageUrl: string, to: string, message: string, from: string) {
+const POSTCARD_SITE_URL = "https://flower.fde.fan";
+
+async function drawPostcard(imageUrl: string, to: string, message: string, from: string, defaultMessage: string) {
   const photo = new Image();
   photo.src = imageUrl;
   await photo.decode();
   const card = document.createElement("canvas");
   card.width = 1000;
-  card.height = 1400;
+  card.height = 1540;
   const context = card.getContext("2d");
   if (!context) throw new Error("Could not draw the postcard");
   context.fillStyle = "#f9f7f0";
@@ -1459,7 +1671,7 @@ async function drawPostcard(imageUrl: string, to: string, message: string, from:
     context.font = `${fontSize}px Georgia, serif`;
     lines = [];
     let line = "";
-    for (const character of Array.from(message || "May your day bloom in its own way.")) {
+    for (const character of Array.from(message || defaultMessage)) {
       if (character === "\n") { lines.push(line); line = ""; continue; }
       if (context.measureText(line + character).width > 850 && line) { lines.push(line); line = character; }
       else line += character;
@@ -1470,18 +1682,40 @@ async function drawPostcard(imageUrl: string, to: string, message: string, from:
   lines.forEach((item, index) => context.fillText(item, 72, 1130 + index * fontSize * 1.35));
   if (from) {
     context.font = "24px Arial, sans-serif";
-    context.textAlign = "right";
-    context.fillText(`From ${from}`, 928, 1360);
+    context.fillText(`From ${from}`, 72, 1360);
   }
+  context.strokeStyle = "#d8d1c3";
+  context.beginPath();
+  context.moveTo(72, 1412);
+  context.lineTo(738, 1412);
+  context.stroke();
+  context.fillStyle = "#817d72";
+  context.font = "14px Arial, sans-serif";
+  context.fillText("SCAN TO OPEN", 72, 1452);
+  context.fillStyle = "#24251f";
+  context.font = "19px Arial, sans-serif";
+  context.fillText("flower.fde.fan", 72, 1484);
+  const qr = document.createElement("canvas");
+  const { default: QRCode } = await import("qrcode");
+  await QRCode.toCanvas(qr, POSTCARD_SITE_URL, {
+    errorCorrectionLevel: "Q",
+    width: 156,
+    margin: 4,
+    color: { dark: "#24251f", light: "#ffffff" },
+  });
+  context.drawImage(qr, 772, 1338, 156, 156);
   return card.toDataURL("image/png");
 }
 
 export default function FlowerStudio() {
   const modelsLoading = useProgress((state) => state.active);
+  const [language, setLanguage] = useState<Language>(getInitialLanguage);
   const [stems, setStems] = useState<Stem[]>([]);
   const [vessel, setVessel] = useState<VesselKind>("classic");
   const [vesselColor, setVesselColor] = useState(getDefaultVesselColor("classic"));
   const [vesselOpacity, setVesselOpacity] = useState(100);
+  const [vesselScale, setVesselScale] = useState(1);
+  const [vesselAdjustOpen, setVesselAdjustOpen] = useState(false);
   const [libraryMode, setLibraryMode] = useState<LibraryMode>("flowers");
   const [vesselCategory, setVesselCategory] = useState<"vase" | "bouquet" | "imagination">("vase");
   const [held, setHeld] = useState<FlowerKind | null>(null);
@@ -1493,8 +1727,12 @@ export default function FlowerStudio() {
   const [wind, setWind] = useState(0.32);
   const [bouquetRotation, setBouquetRotation] = useState<BouquetRotation>({ ...DEFAULT_BOUQUET_ROTATION });
   const [rotationOpen, setRotationOpen] = useState(false);
+  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   const [finishOpen, setFinishOpen] = useState(false);
   const [finishImage, setFinishImage] = useState<string | null>(null);
+  const [postcardRender, setPostcardRender] = useState<{ source: string; to: string; message: string; from: string; image: string } | null>(null);
+  const [mobilePostcardOpen, setMobilePostcardOpen] = useState(false);
+  const [mobileSave, setMobileSave] = useState(false);
   const [recipient, setRecipient] = useState("");
   const [giftMessage, setGiftMessage] = useState("");
   const [sender, setSender] = useState("");
@@ -1502,37 +1740,69 @@ export default function FlowerStudio() {
   const [publishing, setPublishing] = useState(false);
   const [shareError, setShareError] = useState("");
   const [toast, setToast] = useState<string | null>(null);
+  const postcardImage = postcardRender?.source === finishImage
+    && postcardRender.to === recipient.trim()
+    && postcardRender.message === giftMessage.trim()
+    && postcardRender.from === sender.trim()
+    ? postcardRender.image : null;
   const past = useRef<StudioSnapshot[]>([]);
   const future = useRef<StudioSnapshot[]>([]);
   const [historyState, setHistoryState] = useState({ undo: 0, redo: 0 });
   const projectPointerRef = useRef<((x: number, y: number) => THREE.Vector3 | null) | null>(null);
+  const captureSceneRef = useRef<(() => string) | null>(null);
+  const finishOverlayRef = useRef<HTMLDivElement>(null);
   const paletteDrag = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   const suppressClick = useRef(false);
+  useEffect(() => { window.localStorage.setItem("bloomroom-language", language); }, [language]);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 760px), (pointer: coarse)");
+    const update = () => setMobileSave(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  useEffect(() => {
+    if (!finishOpen || !finishImage) return;
+    let cancelled = false;
+    const to = recipient.trim();
+    const message = giftMessage.trim();
+    const from = sender.trim();
+    drawPostcard(finishImage, to, message, from, t(language, "defaultMessage"))
+      .then((image) => { if (!cancelled) setPostcardRender({ source: finishImage, to, message, from, image }); })
+      .catch(() => { if (!cancelled) setToast(t(language, "drawError")); });
+    return () => { cancelled = true; };
+  }, [finishOpen, finishImage, recipient, giftMessage, sender, language]);
+  const changeLanguage = (next: Language) => {
+    setLanguage(next);
+    window.localStorage.setItem("bloomroom-language", next);
+  };
   const checkpoint = useCallback(() => {
-    past.current = [...past.current.slice(-39), { stems, rotation: bouquetRotation, vessel, vesselColor, vesselOpacity }];
+    past.current = [...past.current.slice(-39), { stems, rotation: bouquetRotation, vessel, vesselColor, vesselOpacity, vesselScale }];
     future.current = [];
     setHistoryState({ undo: past.current.length, redo: future.current.length });
-  }, [bouquetRotation, stems, vessel, vesselColor, vesselOpacity]);
+  }, [bouquetRotation, stems, vessel, vesselColor, vesselOpacity, vesselScale]);
   const undo = () => {
     const previous = past.current.pop();
     if (!previous) return;
-    future.current.push({ stems, rotation: bouquetRotation, vessel, vesselColor, vesselOpacity });
+    future.current.push({ stems, rotation: bouquetRotation, vessel, vesselColor, vesselOpacity, vesselScale });
     setStems(previous.stems);
     setBouquetRotation(previous.rotation);
     setVessel(previous.vessel);
     setVesselColor(previous.vesselColor);
     setVesselOpacity(previous.vesselOpacity);
+    setVesselScale(previous.vesselScale);
     setSelectedId(null); setHeld(null); setHistoryState({ undo: past.current.length, redo: future.current.length });
   };
   const redo = () => {
     const next = future.current.pop();
     if (!next) return;
-    past.current.push({ stems, rotation: bouquetRotation, vessel, vesselColor, vesselOpacity });
+    past.current.push({ stems, rotation: bouquetRotation, vessel, vesselColor, vesselOpacity, vesselScale });
     setStems(next.stems);
     setBouquetRotation(next.rotation);
     setVessel(next.vessel);
     setVesselColor(next.vesselColor);
     setVesselOpacity(next.vesselOpacity);
+    setVesselScale(next.vesselScale);
     setSelectedId(null); setHeld(null); setHistoryState({ undo: past.current.length, redo: future.current.length });
   };
 
@@ -1547,13 +1817,19 @@ export default function FlowerStudio() {
     if (!value) return;
     const restored = decodeBouquet(value);
     if (restored?.stems.length) {
+      const queryLanguage = new URLSearchParams(window.location.search).get("lang");
+      const savedLanguage = window.localStorage.getItem("bloomroom-language");
+      const restoredLanguage = ["zh", "en", "de", "fr"].includes(queryLanguage ?? "")
+        ? queryLanguage as Language
+        : ["zh", "en", "de", "fr"].includes(savedLanguage ?? "") ? savedLanguage as Language : "zh";
       queueMicrotask(() => {
         setStems(restored.stems);
         setBouquetRotation(restored.rotation);
         setVessel(restored.vessel);
         setVesselColor(restored.vesselColor);
         setVesselOpacity(restored.vesselOpacity);
-        setToast("Bouquet restored from a shared link.");
+    setVesselScale(restored.vesselScale);
+        setToast(t(restoredLanguage, "restored"));
       });
     }
   }, []);
@@ -1564,12 +1840,31 @@ export default function FlowerStudio() {
     return () => window.clearTimeout(timer);
   }, [toast]);
 
+  useEffect(() => {
+    if (!finishOpen || !window.matchMedia("(max-width: 760px)").matches) return;
+    const overlay = finishOverlayRef.current;
+    const viewport = window.visualViewport;
+    if (!overlay || !viewport) return;
+    const update = () => {
+      overlay.style.setProperty("--visible-height", `${viewport.height}px`);
+      overlay.style.setProperty("--visible-top", `${viewport.offsetTop}px`);
+      const focused = document.activeElement;
+      if (focused instanceof HTMLElement && overlay.contains(focused) && focused.matches("input, textarea")) {
+        focused.scrollIntoView({ block: "nearest", inline: "nearest" });
+      }
+    };
+    update();
+    viewport.addEventListener("resize", update);
+    return () => viewport.removeEventListener("resize", update);
+  }, [finishOpen]);
+
   const endDrag = useCallback(() => setDragId(null), []);
 
   const chooseVessel = (kind: VesselKind) => {
     if (kind === vessel) return;
     checkpoint();
     setVessel(kind);
+    if (isWrappedVessel(kind)) setStems((current) => current.map((stem) => fitStemToVessel(stem, kind)));
     setVesselColor(getDefaultVesselColor(kind));
     setSelectedId(null);
   };
@@ -1582,44 +1877,54 @@ export default function FlowerStudio() {
 
   const applyBouquetPreset = (preset: (typeof BOUQUET_PRESETS)[number]) => {
     checkpoint();
-    setStems(preset.stems.map((stem, index) => ({
+    setStems(preset.stems.map((stem, index) => fitStemToVessel({
       ...stem,
       id: makeId(),
       x: 0,
       seed: index * 1.73 + 1.2,
-    })));
+    }, preset.vessel)));
     setVessel(preset.vessel);
     setVesselColor(getDefaultVesselColor(preset.vessel));
     setVesselOpacity(100);
+    setVesselScale(1);
     setBouquetRotation({ ...DEFAULT_BOUQUET_ROTATION });
     setSelectedId(null);
     setHeld(null);
     setLibraryMode("vessels");
     setVesselCategory("imagination");
-    setToast(`${preset.name} is ready to reshape.`);
+    setToast(`${presetName(language, preset.id as "first-light" | "meadow-air" | "cloud-study")} · ${t(language, "adjust")}`);
   };
 
   const placeFlower = useCallback(
     (point: THREE.Vector3, kind = held) => {
       if (!kind) return;
-      if (stems.length >= 24) { setToast("Your arrangement holds 24 stems. Remove one to make room."); setHeld(null); return; }
+      if (stems.length >= 24) { setToast(t(language, "full")); setHeld(null); return; }
       checkpoint();
       const dx = point.x - 0.72;
-      const next: Stem = {
+      const height = clamp(point.y - stemInsertionY(vessel) * vesselScale, 0.8, 3.2);
+      const z = clamp(point.z, -0.25, 0.25);
+      const lean = naturalLean(kind, height, clamp(dx, -1.7, 1.7), clamp(point.z - z, -0.5, 0.5));
+      const next = fitStemToVessel({
         id: makeId(),
         kind,
         x: 0,
-        z: clamp(point.z, -0.25, 0.25),
-        height: clamp(point.y - stemInsertionY(vessel), 0.8, 3.2),
-        leanX: clamp(dx, -1.7, 1.7),
-        leanZ: clamp(point.z - clamp(point.z, -0.25, 0.25), -0.5, 0.5),
+        z,
+        height,
+        leanX: lean.x,
+        leanZ: lean.z,
         seed: Math.random() * 9,
-      };
+      }, vessel);
       setStems((current) => [...current, next].slice(-24));
-      setSelectedId(next.id);
+      if (window.matchMedia("(max-width: 760px)").matches) {
+        setSelectedId(null);
+        setToast(t(language, "tapToAdjust"));
+      } else {
+        setSelectedId(next.id);
+      }
+      setMobileToolsOpen(false);
       setHeld(null);
     },
-    [held, stems.length, checkpoint, vessel],
+    [held, stems.length, checkpoint, vessel, vesselScale, language],
   );
 
   const dragFlower = useCallback(
@@ -1627,35 +1932,39 @@ export default function FlowerStudio() {
       const dx = point.x - 0.72;
       setStems((current) =>
         current.map((stem) =>
-          stem.id === id
-            ? {
-                ...stem,
-                height: clamp(point.y - stemInsertionY(vessel), 0.8, 3.2),
-                leanX: clamp(dx - stem.x, -1.7, 1.7),
-                leanZ: clamp(point.z - stem.z, -0.5, 0.5),
-              }
-            : stem,
+          stem.id === id ? (() => {
+            const size = stemVisualScale(stem, isWrappedVessel(vessel));
+            const x = dx - stem.x;
+            const z = clamp(point.z - stem.z, -0.5, 0.5);
+            const vertical = Math.max(0.05, point.y - stemInsertionY(vessel) * vesselScale);
+            const height = clamp(Math.hypot(x, vertical, z), 0.8, 3.2);
+            const lean = naturalLean(stem.kind, height, x, z, size);
+            return fitStemToVessel({ ...stem, height, leanX: lean.x, leanZ: lean.z }, vessel);
+          })() : stem,
         ),
       );
     },
-    [vessel],
+    [vessel, vesselScale],
   );
 
   const updateSelectedHeight = (value: number) => {
     if (!selectedId) return;
-    setStems((current) =>
-      current.map((stem) =>
-        stem.id === selectedId
-          ? { ...stem, height: value }
-          : stem,
-      ),
-    );
+    setStems((current) => current.map((stem) => stem.id === selectedId
+      ? fitStemToVessel(stemWithAngle({ ...stem, height: value }, stemAngleDegrees(stem, isWrappedVessel(vessel)), isWrappedVessel(vessel)), vessel)
+      : stem));
+  };
+
+  const updateSelectedSize = (value: number) => {
+    if (!selectedId) return;
+    setStems((current) => current.map((stem) => stem.id === selectedId
+      ? fitStemToVessel(stemWithAngle({ ...stem, visualScale: clamp(value, 0.75, 1.25) }, stemAngleDegrees(stem, isWrappedVessel(vessel)), isWrappedVessel(vessel)), vessel)
+      : stem));
   };
 
   const updateSelectedAngle = (value: number) => {
     if (!selectedId) return;
     setStems((current) => current.map((stem) => stem.id === selectedId
-      ? { ...stem, leanX: value }
+      ? fitStemToVessel(stemWithAngle(stem, value, isWrappedVessel(vessel)), vessel)
       : stem));
   };
 
@@ -1683,6 +1992,7 @@ export default function FlowerStudio() {
     setVessel("classic");
     setVesselColor(getDefaultVesselColor("classic"));
     setVesselOpacity(100);
+    setVesselScale(1);
     setBouquetRotation({ ...DEFAULT_BOUQUET_ROTATION });
     setHeld(null);
     setSelectedId(null);
@@ -1692,7 +2002,7 @@ export default function FlowerStudio() {
 
   const handleKey = useEffectEvent((event: KeyboardEvent) => {
     if (event.target instanceof HTMLElement && (event.target.matches("input, textarea") || event.target.isContentEditable)) return;
-    if (event.key === "Escape") { setHeld(null); setSelectedId(null); setFinishOpen(false); return; }
+    if (event.key === "Escape") { setHeld(null); setSelectedId(null); setMobilePostcardOpen(false); setFinishOpen(false); return; }
     if (finishOpen || dragId) return;
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
       event.preventDefault(); if (event.shiftKey) redo(); else undo();
@@ -1705,31 +2015,34 @@ export default function FlowerStudio() {
   }, []);
 
   const openFinish = () => {
-    if (modelsLoading) { setToast("Some 3D previews are still rendering. Try again in a moment."); return; }
+    if (modelsLoading) { setToast(t(language, "loadingModels")); return; }
     if (!stems.length) {
-      setToast("Add a stem to your arrangement first.");
+      setToast(t(language, "addFirst"));
       return;
     }
-    const canvas = document.querySelector(
-      ".canvas-wrap canvas",
-    ) as HTMLCanvasElement | null;
     setSelectedId(null);
     setHeld(null);
-    requestAnimationFrame(() => requestAnimationFrame(() => {
+    requestAnimationFrame(() => requestAnimationFrame(async () => {
+      const source = captureSceneRef.current?.();
+      if (!source) { setToast(t(language, "captureError")); return; }
+      const photo = new Image();
+      photo.src = source;
+      try { await photo.decode(); } catch { setToast(t(language, "captureError")); return; }
       const snapshot = document.createElement("canvas");
-      const width = Math.min(canvas?.width ?? 0, 1100);
-      const height = canvas?.width ? Math.round((canvas.height / canvas.width) * width) : 0;
+      const width = Math.min(photo.width, 1100);
+      const height = Math.round((photo.height / photo.width) * width);
       snapshot.width = width;
       snapshot.height = height;
       const context = snapshot.getContext("2d");
-      if (context && canvas) {
-        context.fillStyle = "#eee9dd";
-        context.fillRect(0, 0, width, height);
-        context.drawImage(canvas, 0, 0, width, height);
-      }
-      setFinishImage(context ? snapshot.toDataURL("image/jpeg", 0.84) : null);
+      if (!context) { setToast(t(language, "captureError")); return; }
+      context.fillStyle = "#eee9dd";
+      context.fillRect(0, 0, width, height);
+      context.drawImage(photo, 0, 0, width, height);
+      setFinishImage(snapshot.toDataURL("image/jpeg", 0.84));
       setShareUrl(null);
+      setPostcardRender(null);
       setShareError("");
+      setMobilePostcardOpen(false);
       setFinishOpen(true);
     }));
   };
@@ -1743,7 +2056,7 @@ export default function FlowerStudio() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          bouquet: encodeBouquet(stems, bouquetRotation, vessel, vesselColor, vesselOpacity),
+          bouquet: encodeBouquet(stems, bouquetRotation, vessel, vesselColor, vesselOpacity, vesselScale),
           to: recipient,
           message: giftMessage,
           from: sender,
@@ -1752,60 +2065,97 @@ export default function FlowerStudio() {
       });
       const result = await response.json() as { path?: string; error?: string };
       if (!response.ok || !result.path) throw new Error(result.error || "Could not create a link.");
-      setShareUrl(`${window.location.origin}${result.path}`);
+      setShareUrl(`https://flower.fde.fan${result.path}?lang=${language}`);
     } catch {
-      setShareError("Could not save this postcard. Please try again.");
+      setShareError(t(language, "savingError"));
     } finally {
       setPublishing(false);
     }
   };
 
   const copyShareLink = async () => {
-    if (!shareUrl) return;
+    if (!shareUrl) return false;
     try {
       await navigator.clipboard.writeText(shareUrl);
-      setToast("Postcard link copied.");
+      setToast(t(language, "saved"));
+      setShareError("");
+      return true;
     } catch {
-      setShareError("Copy failed. Select the link above to copy it manually.");
+      setShareError(t(language, "copyError"));
+      return false;
     }
   };
 
-  const downloadImage = async () => {
-    if (!finishImage) {
-      setToast("Image is still rendering. Try once more.");
+  const sharePostcardLink = async () => {
+    if (!shareUrl) return;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: t(language, "postcardTitle"),
+          text: giftMessage.trim() || t(language, "defaultMessage"),
+          url: shareUrl,
+        });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      }
+    }
+    if (await copyShareLink()) setToast(t(language, "shareFallback"));
+  };
+
+  const savePostcard = async () => {
+    if (!postcardImage) {
+      setToast(t(language, "imageLoading"));
       return;
     }
     try {
-      const image = await drawPostcard(finishImage, recipient.trim(), giftMessage.trim(), sender.trim());
+      if (mobileSave) {
+        const binary = atob(postcardImage.split(",")[1]);
+        const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+        const file = new File([bytes], "bloomroom-postcard.png", { type: "image/png" });
+        if (navigator.canShare?.({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file], title: t(language, "postcardTitle") });
+            return;
+          } catch (error) {
+            if (error instanceof DOMException && error.name === "AbortError") return;
+          }
+        }
+        setMobilePostcardOpen(true);
+        return;
+      }
       const link = document.createElement("a");
-      link.href = image;
+      link.href = postcardImage;
       link.download = "bloomroom-postcard.png";
       link.click();
     } catch {
-      setToast("Could not draw the postcard. Try again.");
+      setToast(t(language, "drawError"));
     }
   };
 
   return (
-    <main className="studio">
+    <main className="studio" lang={language === "zh" ? "zh-CN" : language}>
       <header className="topbar">
         <div className="brand">
           <div className="brand-mark">B</div>
           <div className="brand-copy">
             <strong>Bloomroom</strong>
-            <span>Digital Flower Studio</span>
+            <span>{t(language, "brand")}</span>
           </div>
         </div>
 
         <div className="top-actions">
-          <span className="stem-count" aria-live="polite">{stems.length} / 24 stems</span>
-          <button className="icon-button" aria-label="Undo" title="Undo (⌘/Ctrl Z)" disabled={!historyState.undo} onClick={undo}><Undo2 size={15} /></button>
-          <button className="icon-button" aria-label="Redo" title="Redo (⌘/Ctrl Shift Z)" disabled={!historyState.redo} onClick={redo}><Redo2 size={15} /></button>
+          <span className="stem-count" aria-live="polite">{stems.length} / 24 {t(language, "stems")}</span>
+          <select className="language-select" aria-label={t(language, "language")} value={language} onChange={(event) => changeLanguage(event.target.value as Language)}>
+            {LANGUAGES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+          </select>
+          <button className="icon-button" aria-label={t(language, "undo")} title={`${t(language, "undo")} (⌘/Ctrl Z)`} disabled={!historyState.undo} onClick={undo}><Undo2 size={15} /></button>
+          <button className="icon-button" aria-label={t(language, "redo")} title={`${t(language, "redo")} (⌘/Ctrl Shift Z)`} disabled={!historyState.redo} onClick={redo}><Redo2 size={15} /></button>
           <button
-            className="icon-button"
+            className="icon-button start-over-button"
             type="button"
-            aria-label="Start over"
-            title="Start over"
+            aria-label={t(language, "startOver")}
+            title={t(language, "startOver")}
             onClick={startOver}
           >
             <RotateCcw size={15} strokeWidth={1.5} />
@@ -1816,18 +2166,16 @@ export default function FlowerStudio() {
             type="button"
             onClick={openFinish}
           >
-            Finish bouquet
+            {t(language, "finish")}
           </button>
         </div>
       </header>
 
-      <section className="workspace" aria-label="Digital flower studio" data-library-mode={libraryMode}>
+      <section className="workspace" aria-label={t(language, "brand")} data-library-mode={libraryMode} data-editing={selectedStem ? "true" : "false"}>
         <div className="hero-copy">
-          <div className="eyebrow">01 · Pick · Place · Feel</div>
-          <h1>Arrange in space.</h1>
-          <p>
-            Click to add a flower in a balanced spot, or drag it for precise placement.
-          </p>
+          <div className="eyebrow">{t(language, "step")}</div>
+          <h1>{t(language, "headline")}</h1>
+          <p>{t(language, "intro")}</p>
         </div>
 
         <div className="canvas-wrap" style={{ cursor: dragId ? "grabbing" : held ? "crosshair" : "default" }}>
@@ -1856,11 +2204,12 @@ export default function FlowerStudio() {
               vessel={vessel}
               vesselColor={vesselColor}
               vesselOpacity={vesselOpacity}
+              vesselScale={vesselScale}
               bouquetRotation={bouquetRotation}
               held={held}
               selectedId={selectedId}
               dragId={dragId}
-              onSelect={setSelectedId}
+              onSelect={(id) => { setSelectedId(id); if (id) { setMobileToolsOpen(false); setVesselAdjustOpen(false); } }}
               onDragStart={(id) => { checkpoint(); setDragId(id); }}
               onPlace={placeFlower}
               onDrag={dragFlower}
@@ -1868,15 +2217,16 @@ export default function FlowerStudio() {
               onRotateStart={checkpoint}
               onRotate={setBouquetRotation}
               projectPointerRef={projectPointerRef}
+              captureSceneRef={captureSceneRef}
             />
           </Canvas>
         </div>
 
-        <aside className={libraryMode === "vessels" ? "palette has-vessel-library" : "palette"} aria-label="Flower component library">
-          <div className="palette-modes" role="tablist" aria-label="Studio library">
+        <aside className={libraryMode === "vessels" ? "palette has-vessel-library" : "palette"} aria-label={t(language, "library")}>
+          <div className="palette-modes" role="tablist" aria-label={t(language, "library")}>
             {([
-              ["flowers", "Flowers", "花材"],
-              ["vessels", "Containers", "容器"],
+              ["flowers", t(language, "flowers"), t(language, "flowers")],
+              ["vessels", t(language, "containers"), t(language, "containers")],
             ] as [LibraryMode, string, string][]).map(([mode, label, subtitle]) => (
               <button key={mode} type="button" role="tab" aria-selected={libraryMode === mode}
                 className={libraryMode === mode ? "palette-mode active" : "palette-mode"}
@@ -1891,20 +2241,20 @@ export default function FlowerStudio() {
 
           <div className="palette-header">
             <div>
-              <span className="palette-step">{libraryMode === "flowers" ? "01 / FLOWERS" : "02 / CONTAINERS"}</span>
-              <h2>{libraryMode === "flowers" ? "What will you arrange today?" : "Choose a container"}</h2>
-              <p>{libraryMode === "flowers" ? "Choose a flower, then place it in your arrangement." : "Choose a vase, wrap, or start from a bouquet."}</p>
+              <span className="palette-step">{libraryMode === "flowers" ? `01 / ${t(language, "flowers")}` : `02 / ${t(language, "containers")}`}</span>
+              <h2>{libraryMode === "flowers" ? t(language, "chooseFlowers") : t(language, "chooseContainer")}</h2>
+              <p>{libraryMode === "flowers" ? t(language, "chooseFlowersHint") : t(language, "chooseContainerHint")}</p>
             </div>
           </div>
 
           {libraryMode === "flowers" ? <>
-            <div className="category-tabs" role="tablist" aria-label="Flower categories">
+            <div className="category-tabs" role="tablist" aria-label={t(language, "flowers")}>
               {(Object.keys(CATEGORY_LABELS) as FlowerCategory[]).map((item) => {
                 const count = FLOWERS.filter((flower) => flower.category === item && flower.kind !== "blue-poppy").length;
                 return <button key={item} type="button" role="tab" aria-selected={category === item}
                   className={category === item ? "category-tab active" : "category-tab"}
                   onClick={() => setCategory(item)}>
-                  <span>{CATEGORY_LABELS[item].label}</span><small>{CATEGORY_LABELS[item].subtitle} · {count}</small>
+                  <span>{categoryName(language, item)}</span><small>{categoryName(language, item)} · {count}</small>
                 </button>;
               })}
             </div>
@@ -1920,12 +2270,13 @@ export default function FlowerStudio() {
                 type="button"
                 aria-pressed={held === flower.kind}
                 onPointerDown={(event) => {
-                  if (event.button !== 0) return;
+                  if (event.button !== 0 || event.pointerType === "touch") return;
                   suppressClick.current = false;
                   paletteDrag.current = { x: event.clientX, y: event.clientY, moved: false };
                   event.currentTarget.setPointerCapture(event.pointerId);
                 }}
                 onPointerMove={(event) => {
+                  if (event.pointerType === "touch") return;
                   const active = paletteDrag.current;
                   if (!active || !event.currentTarget.hasPointerCapture(event.pointerId)) return;
                   if (!active.moved && Math.hypot(event.clientX - active.x, event.clientY - active.y) < 7) return;
@@ -1946,20 +2297,20 @@ export default function FlowerStudio() {
                   } else setHeld(null);
                 }}
                 onPointerCancel={() => { paletteDrag.current = null; setHeld(null); }}
-                onClick={() => { if (suppressClick.current) { suppressClick.current = false; return; } placeFlower(autoPlacementPoint(flower.kind, stems.length, vessel), flower.kind); }}
+                onClick={() => { if (suppressClick.current) { suppressClick.current = false; return; } placeFlower(autoPlacementPoint(flower.kind, stems, vessel, vesselScale), flower.kind); }}
               >
                 <FlowerThumbnail kind={flower.kind} />
                 <span className="flower-card-plus" aria-hidden="true">+</span>
-                <strong>{flower.name}</strong>
+                <strong>{flowerName(language, flower.kind)}</strong>
                 <small>{flower.latin}</small>
-                {stems.some((stem) => stem.kind === flower.kind) ? <span className="added-indicator">Added · {stems.filter((stem) => stem.kind === flower.kind).length}</span> : null}
+                {stems.some((stem) => stem.kind === flower.kind) ? <span className="added-indicator">{t(language, "added")} · {stems.filter((stem) => stem.kind === flower.kind).length}</span> : null}
                 {flower.availability !== "available" ? (
                   <span
                     className={`availability ${flower.availability}`}
                   >
                     {flower.availability === "play"
-                      ? "play only"
-                      : "preorder"}
+                      ? t(language, "studioOnly")
+                      : t(language, "preorder")}
                   </span>
                 ) : null}
               </button>
@@ -1968,46 +2319,17 @@ export default function FlowerStudio() {
           </> : null}
 
           {libraryMode === "vessels" ? <div className="library-scroll vessel-library">
-            <div className="vessel-tabs" role="tablist" aria-label="Vessel type">
-              <button type="button" role="tab" aria-selected={vesselCategory === "vase"} className={vesselCategory === "vase" ? "vessel-tab active" : "vessel-tab"} onClick={() => setVesselCategory("vase")}>Vases</button>
-              <button type="button" role="tab" aria-selected={vesselCategory === "bouquet"} className={vesselCategory === "bouquet" ? "vessel-tab active" : "vessel-tab"} onClick={() => setVesselCategory("bouquet")}>Bouquets</button>
-              <button type="button" role="tab" aria-selected={vesselCategory === "imagination"} className={vesselCategory === "imagination" ? "vessel-tab active" : "vessel-tab"} onClick={() => setVesselCategory("imagination")}>Imagination</button>
+            <div className="vessel-tabs" role="tablist" aria-label={t(language, "containers")}>
+              <button type="button" role="tab" aria-selected={vesselCategory === "vase"} className={vesselCategory === "vase" ? "vessel-tab active" : "vessel-tab"} onClick={() => setVesselCategory("vase")}>{t(language, "vase")}</button>
+              <button type="button" role="tab" aria-selected={vesselCategory === "bouquet"} className={vesselCategory === "bouquet" ? "vessel-tab active" : "vessel-tab"} onClick={() => setVesselCategory("bouquet")}>{t(language, "bouquets")}</button>
+              <button type="button" role="tab" aria-selected={vesselCategory === "imagination"} className={vesselCategory === "imagination" ? "vessel-tab active" : "vessel-tab"} onClick={() => setVesselCategory("imagination")}>{t(language, "imagination")}</button>
             </div>
-            {vessel !== "naked" ? <div className="vessel-appearance">
-              <span className="vessel-appearance-title">Container color</span>
-              <div className="color-options" role="group" aria-label="Container color">
-                {getVesselColors(vessel).map((option) => <button
-                  key={option.color}
-                  type="button"
-                  className="color-option"
-                  style={{ "--petal-color": option.color } as React.CSSProperties}
-                  aria-label={option.label}
-                  aria-pressed={vesselColor === option.color}
-                  title={option.label}
-                  onClick={() => chooseVesselColor(option.color)}
-                ><span /></button>)}
-              </div>
-              <label htmlFor="vessel-opacity"><span>Opacity</span><output>{vesselOpacity}%</output></label>
-              <input
-                id="vessel-opacity"
-                className="range"
-                type="range"
-                min="25"
-                max="100"
-                step="5"
-                value={vesselOpacity}
-                aria-label="Container opacity"
-                onPointerDown={checkpoint}
-                onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) checkpoint(); }}
-                onChange={(event) => setVesselOpacity(Number(event.target.value))}
-              />
-            </div> : null}
             {vesselCategory === "imagination" ? <div className="vessel-options-scroll bouquet-grid">
               {BOUQUET_PRESETS.map((preset) => (
                 <button key={preset.id} type="button" className="bouquet-card" onClick={() => applyBouquetPreset(preset)}>
                   <BouquetThumbnail preset={preset} />
-                  <span className="bouquet-card-copy"><strong>{preset.name}</strong><small>{preset.note}</small></span>
-                  <span className="bouquet-card-count">{preset.stems.length} stems</span>
+              <span className="bouquet-card-copy"><strong>{presetName(language, preset.id as "first-light" | "meadow-air" | "cloud-study")}</strong><small>{presetNote(language, preset.id as "first-light" | "meadow-air" | "cloud-study")}</small></span>
+                  <span className="bouquet-card-count">{preset.stems.length} {t(language, "stems")}</span>
                 </button>
               ))}
             </div> : <div className="vessel-options-scroll vessel-grid">
@@ -2020,46 +2342,87 @@ export default function FlowerStudio() {
                     vesselColor={vessel === option.kind ? vesselColor : getDefaultVesselColor(option.kind)}
                     vesselOpacity={vessel === option.kind ? vesselOpacity : 100}
                   />
-                  <strong>{option.name}</strong><small>{option.note}</small>
+                  <strong>{vesselName(language, option.kind)}</strong><small>{vesselNote(language, option.kind)}</small>
                 </button>
               ))}
             </div>}
           </div> : null}
         </aside>
 
-        <aside className="scene-tools" aria-label="Studio controls">
+        <button type="button" className="vessel-adjust-toggle" aria-expanded={vesselAdjustOpen} aria-controls="vessel-adjust-panel" disabled={vessel === "naked"} onClick={() => { setVesselAdjustOpen((open) => !open); setSelectedId(null); setMobileToolsOpen(false); }}><SlidersHorizontal size={15} /> {t(language, "adjustContainer")}</button>
+        {vesselAdjustOpen && vessel !== "naked" && <section id="vessel-adjust-panel" className="selection-card vessel-adjust-panel" aria-label={t(language, "adjustContainer")}>
+          <div className="vessel-adjust-heading"><strong>{t(language, "adjustContainer")}</strong><button type="button" aria-label={t(language, "done")} onClick={() => setVesselAdjustOpen(false)}><X size={17} /></button></div>
+            <div className="vessel-appearance">
+              <span className="vessel-appearance-title">{t(language, "containerColor")}</span>
+              <div className="color-options" role="group" aria-label={t(language, "containerColor")}>
+                {getVesselColors(vessel).map((option) => <button
+                  key={option.color}
+                  type="button"
+                  className="color-option"
+                  style={{ "--petal-color": option.color } as React.CSSProperties}
+                  aria-label={colorName(language, option.label)}
+                  aria-pressed={vesselColor === option.color}
+                  title={colorName(language, option.label)}
+                  onClick={() => chooseVesselColor(option.color)}
+                ><span /></button>)}
+              </div>
+              <label htmlFor="vessel-opacity"><span>{t(language, "opacity")}</span><output>{vesselOpacity}%</output></label>
+              <input
+                id="vessel-opacity"
+                className="range"
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={vesselOpacity}
+                aria-label={t(language, "opacity")}
+                onPointerDown={checkpoint}
+                onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) checkpoint(); }}
+                onChange={(event) => setVesselOpacity(Number(event.target.value))}
+              />
+              <label htmlFor="vessel-size"><span>{t(language, "containerSize")}</span><output>{Math.round(vesselScale * 100)}%</output></label>
+              <input id="vessel-size" className="range" type="range" min="70" max="130" step="1" value={Math.round(vesselScale * 100)} aria-label={t(language, "containerSize")} onPointerDown={checkpoint} onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) checkpoint(); }} onChange={(event) => setVesselScale(Number(event.target.value) / 100)} />
+            </div>
+        </section>}
+
+        <button type="button" className="mobile-tools-toggle" aria-expanded={mobileToolsOpen} aria-controls="studio-scene-tools"
+          onClick={() => { setMobileToolsOpen((open) => !open); setSelectedId(null); }}>
+          {mobileToolsOpen ? <X size={17} /> : <SlidersHorizontal size={17} />}
+          <span>{t(language, "tools")}</span>
+        </button>
+        <aside id="studio-scene-tools" className={mobileToolsOpen ? "scene-tools mobile-open" : "scene-tools"} aria-label={t(language, "tools")}>
           <div className="tool-section">
             <button type="button" className="adjust-toggle" disabled={!stems.length}
               aria-expanded={!!selectedStem}
-              onClick={() => setSelectedId(selectedStem ? null : stems[0].id)}>
-              <span>Adjust flowers</span><span>{stems.length}</span>
+              onClick={() => { setVesselAdjustOpen(false); setSelectedId(selectedStem ? null : stems[0].id); }}>
+              <span>{t(language, "adjust")}</span><span>{stems.length}</span>
             </button>
-            <p className="rotation-hint">Click a flower to edit its height, angle, and color.</p>
+            <p className="rotation-hint">{t(language, "adjustHint")}</p>
           </div>
           <div className="tool-section">
             <div className="tool-label">
-              <span>Morning light</span>
+              <span>{t(language, "morningLight")}</span>
               <Sparkles size={13} strokeWidth={1.4} />
             </div>
             <div className="light-adjustments">
               <label className="light-control" htmlFor="light-warmth">
-                <span>Warmth</span><output>{lightWarmth === 0 ? "Balanced" : lightWarmth > 0 ? `+${lightWarmth}` : lightWarmth}</output>
+                <span>{t(language, "warmth")}</span><output>{lightWarmth === 0 ? t(language, "balanced") : lightWarmth > 0 ? `+${lightWarmth}` : lightWarmth}</output>
               </label>
               <input id="light-warmth" className="range" type="range" min="-100" max="100" value={lightWarmth}
-                aria-label="Light warmth" onChange={(event) => setLightWarmth(Number(event.target.value))} />
-              <div className="light-scale"><span>Cool</span><span>Warm</span></div>
+                aria-label={t(language, "warmth")} onChange={(event) => setLightWarmth(Number(event.target.value))} />
+              <div className="light-scale"><span>{t(language, "cool")}</span><span>{t(language, "warm")}</span></div>
               <label className="light-control" htmlFor="light-direction">
-                <span>Direction</span><output>{lightDirection}°</output>
+                <span>{t(language, "direction")}</span><output>{lightDirection}°</output>
               </label>
               <input id="light-direction" className="range" type="range" min="-180" max="180" value={lightDirection}
-                aria-label="Light direction" onChange={(event) => setLightDirection(Number(event.target.value))} />
-              <div className="light-scale"><span>Turn left</span><span>Turn right</span></div>
+                aria-label={t(language, "direction")} onChange={(event) => setLightDirection(Number(event.target.value))} />
+              <div className="light-scale"><span>{t(language, "turnLeft")}</span><span>{t(language, "turnRight")}</span></div>
             </div>
           </div>
 
           <div className="tool-section">
             <div className="tool-label">
-              <span>Wind</span>
+              <span>{t(language, "wind")}</span>
               <Wind size={13} strokeWidth={1.4} />
             </div>
             <input
@@ -2068,14 +2431,14 @@ export default function FlowerStudio() {
               min="0"
               max="100"
               value={Math.round(wind * 100)}
-              aria-label="Wind strength"
+              aria-label={t(language, "windStrength")}
               onChange={(event) =>
                 setWind(Number(event.target.value) / 100)
               }
             />
           </div>
 
-          <AmbientSoundPanel />
+          <AmbientSoundPanel language={language} />
 
           <div className="tool-section rotation-section">
             <button
@@ -2084,17 +2447,20 @@ export default function FlowerStudio() {
               aria-expanded={rotationOpen}
               aria-controls="bouquet-rotation-controls"
               aria-describedby="bouquet-rotation-hint"
-              title="Flowers rotate together with the vase"
+              title={t(language, "rotateHint")}
               onClick={() => setRotationOpen((open) => !open)}
             >
-              <span>Rotate vase</span>
+              <span>{t(language, "rotateVase")}</span>
               <RotateCcw size={13} strokeWidth={1.5} />
             </button>
-            <p className="rotation-hint" id="bouquet-rotation-hint">Drag vase: left/right turns, up/down tilts. Shift-drag rolls.</p>
+            <p className="rotation-hint" id="bouquet-rotation-hint">
+              <span className="rotation-hint-desktop">{t(language, "rotateHint")}</span>
+              <span className="rotation-hint-touch">{t(language, "rotateTouchHint")}</span>
+            </p>
             <div id="bouquet-rotation-controls" className="rotation-controls" hidden={!rotationOpen}>
                 <div className="rotation-axis">
                   <label htmlFor="bouquet-rotation-x">
-                    <span>X · Tilt</span><span>{Math.round(bouquetRotation.x)}°</span>
+                    <span>X · {t(language, "tilt")}</span><span>{Math.round(bouquetRotation.x)}°</span>
                   </label>
                   <input
                     id="bouquet-rotation-x"
@@ -2104,7 +2470,7 @@ export default function FlowerStudio() {
                     max="35"
                     step="1"
                     value={bouquetRotation.x}
-                    aria-label="Bouquet rotation around X axis"
+                    aria-label={`${t(language, "tilt")} X`}
                     onPointerDown={checkpoint}
                     onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) checkpoint(); }}
                     onChange={(event) => setBouquetRotation((current) => ({ ...current, x: Number(event.target.value) }))}
@@ -2112,7 +2478,7 @@ export default function FlowerStudio() {
                 </div>
                 <div className="rotation-axis">
                   <label htmlFor="bouquet-rotation-y">
-                    <span>Y · Turn</span><span>{Math.round(bouquetRotation.y)}°</span>
+                    <span>Y · {t(language, "turn")}</span><span>{Math.round(bouquetRotation.y)}°</span>
                   </label>
                   <input
                     id="bouquet-rotation-y"
@@ -2122,7 +2488,7 @@ export default function FlowerStudio() {
                     max="180"
                     step="1"
                     value={bouquetRotation.y}
-                    aria-label="Bouquet rotation around Y axis"
+                    aria-label={`${t(language, "turn")} Y`}
                     onPointerDown={checkpoint}
                     onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) checkpoint(); }}
                     onChange={(event) => setBouquetRotation((current) => ({ ...current, y: Number(event.target.value) }))}
@@ -2130,7 +2496,7 @@ export default function FlowerStudio() {
                 </div>
                 <div className="rotation-axis">
                   <label htmlFor="bouquet-rotation-z">
-                    <span>Z · Roll</span><span>{Math.round(bouquetRotation.z)}°</span>
+                    <span>Z · {t(language, "roll")}</span><span>{Math.round(bouquetRotation.z)}°</span>
                   </label>
                   <input
                     id="bouquet-rotation-z"
@@ -2140,7 +2506,7 @@ export default function FlowerStudio() {
                     max="35"
                     step="1"
                     value={bouquetRotation.z}
-                    aria-label="Bouquet rotation around Z axis"
+                    aria-label={`${t(language, "roll")} Z`}
                     onPointerDown={checkpoint}
                     onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) checkpoint(); }}
                     onChange={(event) => setBouquetRotation((current) => ({ ...current, z: Number(event.target.value) }))}
@@ -2156,7 +2522,7 @@ export default function FlowerStudio() {
                     }
                   }}
                 >
-                  Reset rotation
+                  {t(language, "resetRotation")}
                 </button>
             </div>
           </div>
@@ -2167,9 +2533,12 @@ export default function FlowerStudio() {
           stems={stems}
           colors={selectedColors}
           colorVariant={selectedColorVariant}
+          language={language}
+          wrapped={isWrappedVessel(vessel)}
           onSelectStem={setSelectedId}
           onStartChange={checkpoint}
           onHeightChange={updateSelectedHeight}
+          onSizeChange={updateSelectedSize}
           onAngleChange={updateSelectedAngle}
           onColorChange={updateSelectedColor}
           onRemove={removeSelected}
@@ -2178,27 +2547,27 @@ export default function FlowerStudio() {
 
         {held ? (
           <div className="hint" role="status">
-            {getSpec(held).name} · Place in the room · Esc to cancel
+            {flowerName(language, held)} · {t(language, "dragPrompt")}
           </div>
         ) : stems.length === 0 ? (
           <div className="hint" role="status">
-            Pick a flower or drag one into the room.
+            {t(language, "placePrompt")}
           </div>
         ) : null}
       </section>
 
       {finishOpen ? (
-        <div className="finish-overlay" role="dialog" aria-modal="true">
+        <div className="finish-overlay" role="dialog" aria-modal="true" ref={finishOverlayRef}>
           <div className="finish-card">
             <div
               className="finish-preview"
               style={
-                finishImage
+                (postcardImage || finishImage)
                   ? {
-                      backgroundImage: `url(${finishImage})`,
+                      backgroundImage: `url(${postcardImage || finishImage})`,
                       backgroundSize: "contain",
                       backgroundRepeat: "no-repeat",
-                      backgroundPosition: "center 38%",
+                      backgroundPosition: postcardImage ? "center" : "center 38%",
                     }
                   : undefined
               }
@@ -2206,64 +2575,79 @@ export default function FlowerStudio() {
               <button
                 className="close-finish"
                 type="button"
-                aria-label="Back to editing"
+                aria-label={t(language, "back")}
                 onClick={() => setFinishOpen(false)}
               >
                 <X size={16} strokeWidth={1.5} />
               </button>
-              <div className="finish-preview-caption">
-                <span>Bloomroom · A gift of flowers</span>
-                {recipient.trim() && <strong>To {recipient.trim()}</strong>}
-                <p>{giftMessage.trim() || "May your day bloom in its own way."}</p>
-                {sender.trim() && <em>From {sender.trim()}</em>}
-              </div>
+              {!postcardImage && <div className="finish-preview-caption">
+                <span>{t(language, "postcardTitle")}</span>
+                {recipient.trim() && <strong>{t(language, "toName")} {recipient.trim()}</strong>}
+                <p>{giftMessage.trim() || t(language, "defaultMessage")}</p>
+                {sender.trim() && <em>{t(language, "fromName")} {sender.trim()}</em>}
+              </div>}
             </div>
 
             <div className="finish-copy">
-              <div className="eyebrow">A gift of flowers</div>
-              <h2>Send your bouquet.</h2>
-              <p>Write a note, then make a personal postcard to share.</p>
+              <div className="eyebrow">{t(language, "sendEyebrow")}</div>
+              <h2>{t(language, "sendTitle")}</h2>
+              <p>{t(language, "sendHint")}</p>
 
               <div className="gift-fields">
-                <label htmlFor="gift-to">To</label>
-                <input id="gift-to" type="text" maxLength={64} placeholder="Someone you love" value={recipient}
+                <label htmlFor="gift-to">{t(language, "to")}</label>
+                <input id="gift-to" type="text" maxLength={64} placeholder={t(language, "recipientPlaceholder")} value={recipient}
                   onChange={(event) => { setRecipient(event.target.value); setShareUrl(null); }} />
-                <label htmlFor="gift-message">Message</label>
-                <textarea id="gift-message" rows={4} maxLength={240} placeholder="May your day bloom in its own way."
+                <label htmlFor="gift-message">{t(language, "message")}</label>
+                <textarea id="gift-message" rows={4} maxLength={240} placeholder={t(language, "messagePlaceholder")}
                   value={giftMessage} onChange={(event) => { setGiftMessage(event.target.value); setShareUrl(null); }} />
                 <small>{giftMessage.length} / 240</small>
-                <label htmlFor="gift-from">From</label>
-                <input id="gift-from" type="text" maxLength={64} placeholder="Your name" value={sender}
+                <label htmlFor="gift-from">{t(language, "from")}</label>
+                <input id="gift-from" type="text" maxLength={64} placeholder={t(language, "senderPlaceholder")} value={sender}
                   onChange={(event) => { setSender(event.target.value); setShareUrl(null); }} />
               </div>
 
               {shareUrl && <div className="share-result" aria-live="polite">
-                <label htmlFor="postcard-link">Your private postcard link</label>
+                <label htmlFor="postcard-link">{t(language, "privateLink")}</label>
                 <input id="postcard-link" type="text" readOnly value={shareUrl} onFocus={(event) => event.target.select()} />
-                <button type="button" onClick={copyShareLink}><Copy size={13} /> Copy link</button>
+                <div className="share-result-actions">
+                  <button type="button" className="share-direct" onClick={sharePostcardLink}><Share2 size={13} /> {t(language, "shareDirectly")}</button>
+                  <button type="button" onClick={copyShareLink}><Copy size={13} /> {t(language, "copyLink")}</button>
+                </div>
               </div>}
               {shareError && <p className="share-error" role="alert">{shareError}</p>}
 
               <div className="finish-actions">
-                <button type="button" onClick={downloadImage}>
-                  <Download size={13} /> Download postcard
+                <button type="button" className="primary" onClick={savePostcard} disabled={!postcardImage}>
+                  <Download size={13} /> {mobileSave ? t(language, "saveToPhotos") : t(language, "download")}
                 </button>
-                <button type="button" className="primary" onClick={createShareLink} disabled={publishing || !finishImage}>
-                  {publishing ? "Creating…" : shareUrl ? "Create another link" : "Create share link"}
+                <button type="button" onClick={createShareLink} disabled={publishing || !finishImage}>
+                  {publishing ? t(language, "creating") : shareUrl ? t(language, "createAnother") : t(language, "createLink")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setFinishOpen(false)}
                 >
-                  Back to editing
+                  {t(language, "back")}
                 </button>
               </div>
             </div>
           </div>
+          <button className="mobile-finish-close" type="button" aria-label={t(language, "back")} onClick={() => setFinishOpen(false)}>
+            <X size={18} strokeWidth={1.5} />
+          </button>
+          {mobilePostcardOpen && postcardImage && (
+            <div className="mobile-postcard-view" role="dialog" aria-modal="true" aria-label={t(language, "saveToPhotos")}>
+              <button type="button" onClick={() => setMobilePostcardOpen(false)} aria-label={t(language, "back")}>×</button>
+              <p>{t(language, "longPressToSave")}</p>
+              {/* Native image context menus expose Save Image on mobile browsers without file sharing. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={postcardImage} alt={t(language, "postcardTitle")} />
+            </div>
+          )}
         </div>
       ) : null}
 
-      <a className="model-credits" href="/models/credits.html" target="_blank" rel="noreferrer">3D artists & credits ↗</a>
+      <a className="model-credits" href="/models/credits.html" target="_blank" rel="noreferrer">{t(language, "credits")} ↗</a>
       {toast ? <div className="toast">{toast}</div> : null}
     </main>
   );

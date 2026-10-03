@@ -105,14 +105,14 @@ const MANIFEST = [
     type: "stem",
   },
   {
-    uid: "d40b58e0af514977aa52b839659dc1d3",
+    uid: "cec4f820ad70467899c661498564a780",
     out: "anemone",
-    title: "Anemone hybrida 'Honorine Jobert'",
-    author: "Livin Vision",
-    username: "LivinVision",
-    license: "http://creativecommons.org/licenses/by/4.0/",
-    changes: "Complete anemone stem retained; textures resized to at most 1024px; materials normalized at runtime.",
-    type: "stem",
+    title: "Wood anemone",
+    author: "Skuft",
+    username: "Skuft",
+    license: "https://creativecommons.org/licenses/by/4.0/",
+    changes: "One complete flower head retained; branching leaves and source stem removed; diameter calibrated to 9 cm.",
+    type: "flower",
   },
 
   // ── Filler / Accent Blooms ──────────────────────────────────────────────

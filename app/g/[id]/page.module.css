@@ -68,8 +68,11 @@
 }
 
 .to, .from { margin: 0; font-size: 13px; letter-spacing: .02em; }
-.from { margin-top: auto; align-self: flex-end; padding-top: 18px; }
+.footer { width: 100%; margin-top: auto; padding-top: 18px; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
+.from { margin: 0; align-self: flex-end; }
 .note { max-width: 720px; margin: 9px 0 15px; font-family: Georgia, serif; font-size: clamp(19px, 3vw, 30px); line-height: 1.35; white-space: pre-wrap; overflow-wrap: anywhere; }
+.qrLink { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-left: auto; color: #6d6b62; text-decoration: none; font-size: 10px; white-space: nowrap; }
+.qrLink img { display: block; width: 104px; height: 104px; background: #fff; }
 
 .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px 28px; margin: 38px auto 0; font-size: 12px; }
 .actions a { color: #363d34; text-underline-offset: 5px; }
@@ -82,5 +85,8 @@
   .postcard { padding: 10px 10px 0; }
   .photo { min-height: 260px; height: 65vw; }
   .message { min-height: 210px; padding: 21px 18px 26px; }
+  .footer { gap: 8px; }
+  .qrLink { font-size: 9px; }
+  .qrLink img { width: 88px; height: 88px; }
   .actions { flex-direction: column; align-items: center; margin-top: 28px; }
 }
