@@ -2971,14 +2971,11 @@ export default function FlowerStudio() {
                   type="button"
                   aria-label={t(language, "myGarden")}
                   onClick={() => setGardenModalOpen(true)}
-                  title={t(language, "myGarden")}
+                  title={`${t(language, "myGarden")} (@${user.username})`}
                 >
                   <Flower2 size={18} aria-hidden="true" />
                   <span>{t(language, "myGarden")}</span>
                 </button>
-                <span className="user-badge" title={user.username}>
-                  {user.username}
-                </span>
                 <button
                   className="icon-button logout-button"
                   type="button"
