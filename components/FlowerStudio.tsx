@@ -1363,7 +1363,7 @@ function StudioScene({
   onRotateStart: () => void;
   onRotate: (rotation: BouquetRotation) => void;
   projectPointerRef: React.RefObject<((x: number, y: number) => THREE.Vector3 | null) | null>;
-  captureSceneRef: React.RefObject<(() => string) | null>;
+  captureSceneRef: React.RefObject<((highRes?: boolean) => string) | null>;
 }) {
   const bouquetGroupRef = useRef<THREE.Group>(null);
   const wrapped = vessel === "paper" || vessel === "canvas";
@@ -1379,7 +1379,21 @@ function StudioScene({
     scene.background = new THREE.Color(backdropConfig.color);
   }, [scene, backdropConfig.color]);
   useEffect(() => {
-    captureSceneRef.current = () => {
+    captureSceneRef.current = (highRes?: boolean) => {
+      if (highRes) {
+        const prevRatio = gl.getPixelRatio();
+        const prevSize = new THREE.Vector2();
+        gl.getSize(prevSize);
+        const targetWidth = 1920;
+        const targetRatio = Math.min(Math.max(prevRatio, targetWidth / Math.max(prevSize.x, 1)), 4);
+        gl.setPixelRatio(targetRatio);
+        gl.render(scene, camera);
+        const data = gl.domElement.toDataURL("image/png");
+        gl.setPixelRatio(prevRatio);
+        gl.setSize(prevSize.x, prevSize.y, false);
+        gl.render(scene, camera);
+        return data;
+      }
       gl.render(scene, camera);
       return gl.domElement.toDataURL("image/png");
     };
@@ -1749,67 +1763,113 @@ async function drawPostcard(imageUrl: string, to: string, message: string, from:
   const photo = new Image();
   photo.src = imageUrl;
   await photo.decode();
+
+  // High-resolution scale: 2x (2000 × 3080 px for ultra-crisp display, saving, and printing)
+  const SCALE = 2;
   const card = document.createElement("canvas");
-  card.width = 1000;
-  card.height = 1540;
+  card.width = 1000 * SCALE;
+  card.height = 1540 * SCALE;
   const context = card.getContext("2d");
   if (!context) throw new Error("Could not draw the postcard");
+
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
+
+  // Card background
   context.fillStyle = "#f9f7f0";
   context.fillRect(0, 0, card.width, card.height);
+
+  // Photo frame background
   context.fillStyle = backdropColor;
-  context.fillRect(42, 42, 916, 930);
-  const scale = Math.min(916 / photo.width, 930 / photo.height);
+  context.fillRect(42 * SCALE, 42 * SCALE, 916 * SCALE, 930 * SCALE);
+
+  // High-res photo positioning
+  const scale = Math.min((916 * SCALE) / photo.width, (930 * SCALE) / photo.height);
   const width = photo.width * scale;
   const height = photo.height * scale;
-  context.drawImage(photo, 42 + (916 - width) / 2, 42 + (930 - height) / 2, width, height);
+  context.drawImage(
+    photo,
+    42 * SCALE + (916 * SCALE - width) / 2,
+    42 * SCALE + (930 * SCALE - height) / 2,
+    width,
+    height,
+  );
+
+  // Inner frame border
   context.strokeStyle = "rgba(0, 0, 0, 0.08)";
-  context.lineWidth = 1;
-  context.strokeRect(41.5, 41.5, 917, 931);
+  context.lineWidth = 1 * SCALE;
+  context.strokeRect(41.5 * SCALE, 41.5 * SCALE, 917 * SCALE, 931 * SCALE);
+
+  // Brand header text
   context.fillStyle = "#817d72";
-  context.font = "18px Arial, sans-serif";
-  context.fillText("BLOOMROOM  ·  A GIFT OF FLOWERS", 72, 1022);
+  context.font = `${18 * SCALE}px Arial, sans-serif`;
+  context.fillText("BLOOMROOM  ·  A GIFT OF FLOWERS", 72 * SCALE, 1022 * SCALE);
+
+  // Recipient line
   context.fillStyle = "#24251f";
-  context.font = "24px Arial, sans-serif";
-  if (to) context.fillText(`To ${to},`, 72, 1080);
+  context.font = `${24 * SCALE}px Arial, sans-serif`;
+  if (to) context.fillText(`To ${to},`, 72 * SCALE, 1080 * SCALE);
+
+  // Message typography with dynamic font size stepping
   let lines: string[] = [];
-  let fontSize = 31;
-  for (; fontSize >= 17; fontSize--) {
-    context.font = `${fontSize}px Georgia, serif`;
+  let baseFontSize = 31;
+  for (; baseFontSize >= 17; baseFontSize--) {
+    const curFontPx = baseFontSize * SCALE;
+    context.font = `${curFontPx}px Georgia, serif`;
     lines = [];
     let line = "";
     for (const character of Array.from(message || defaultMessage)) {
       if (character === "\n") { lines.push(line); line = ""; continue; }
-      if (context.measureText(line + character).width > 850 && line) { lines.push(line); line = character; }
-      else line += character;
+      if (context.measureText(line + character).width > (850 * SCALE) && line) {
+        lines.push(line);
+        line = character;
+      } else {
+        line += character;
+      }
     }
     if (line) lines.push(line);
-    if (lines.length * fontSize * 1.35 <= 220) break;
+    if (lines.length * curFontPx * 1.35 <= (220 * SCALE)) break;
   }
-  lines.forEach((item, index) => context.fillText(item, 72, 1130 + index * fontSize * 1.35));
+  const finalFontPx = baseFontSize * SCALE;
+  context.font = `${finalFontPx}px Georgia, serif`;
+  lines.forEach((item, index) => {
+    context.fillText(item, 72 * SCALE, 1130 * SCALE + index * finalFontPx * 1.35);
+  });
+
+  // Sender line
   if (from) {
-    context.font = "24px Arial, sans-serif";
-    context.fillText(`From ${from}`, 72, 1360);
+    context.font = `${24 * SCALE}px Arial, sans-serif`;
+    context.fillText(`From ${from}`, 72 * SCALE, 1360 * SCALE);
   }
+
+  // Divider line
   context.strokeStyle = "#d8d1c3";
+  context.lineWidth = 1 * SCALE;
   context.beginPath();
-  context.moveTo(72, 1412);
-  context.lineTo(738, 1412);
+  context.moveTo(72 * SCALE, 1412 * SCALE);
+  context.lineTo(738 * SCALE, 1412 * SCALE);
   context.stroke();
+
+  // Footer "SCAN TO OPEN"
   context.fillStyle = "#817d72";
-  context.font = "14px Arial, sans-serif";
-  context.fillText("SCAN TO OPEN", 72, 1452);
+  context.font = `${14 * SCALE}px Arial, sans-serif`;
+  context.fillText("SCAN TO OPEN", 72 * SCALE, 1452 * SCALE);
+
+  // Footer domain
   context.fillStyle = "#24251f";
-  context.font = "19px Arial, sans-serif";
-  context.fillText("flower.fde.fan", 72, 1484);
+  context.font = `${19 * SCALE}px Arial, sans-serif`;
+  context.fillText("flower.fde.fan", 72 * SCALE, 1484 * SCALE);
+
+  // High-res QR code
   const qr = document.createElement("canvas");
   const { default: QRCode } = await import("qrcode");
   await QRCode.toCanvas(qr, POSTCARD_SITE_URL, {
     errorCorrectionLevel: "Q",
-    width: 156,
+    width: 156 * SCALE,
     margin: 4,
     color: { dark: "#24251f", light: "#ffffff" },
   });
-  context.drawImage(qr, 772, 1338, 156, 156);
+  context.drawImage(qr, 772 * SCALE, 1338 * SCALE, 156 * SCALE, 156 * SCALE);
   return card.toDataURL("image/png");
 }
 
@@ -1837,6 +1897,7 @@ export default function FlowerStudio() {
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   const [finishOpen, setFinishOpen] = useState(false);
   const [finishImage, setFinishImage] = useState<string | null>(null);
+  const [highResImage, setHighResImage] = useState<string | null>(null);
   const [postcardRender, setPostcardRender] = useState<{ source: string; to: string; message: string; from: string; image: string } | null>(null);
   const [mobilePostcardOpen, setMobilePostcardOpen] = useState(false);
   const [mobileSave, setMobileSave] = useState(false);
@@ -1856,7 +1917,7 @@ export default function FlowerStudio() {
   const future = useRef<StudioSnapshot[]>([]);
   const [historyState, setHistoryState] = useState({ undo: 0, redo: 0 });
   const projectPointerRef = useRef<((x: number, y: number) => THREE.Vector3 | null) | null>(null);
-  const captureSceneRef = useRef<(() => string) | null>(null);
+  const captureSceneRef = useRef<((highRes?: boolean) => string) | null>(null);
   const finishOverlayRef = useRef<HTMLDivElement>(null);
   const paletteDrag = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   const suppressClick = useRef(false);
@@ -1875,11 +1936,12 @@ export default function FlowerStudio() {
     const message = giftMessage.trim();
     const from = sender.trim();
     const backdropColor = BACKDROP_CONFIG[backdrop]?.color ?? "#EEE9DD";
-    drawPostcard(finishImage, to, message, from, t(language, "defaultMessage"), backdropColor)
+    const renderSource = highResImage || finishImage;
+    drawPostcard(renderSource, to, message, from, t(language, "defaultMessage"), backdropColor)
       .then((image) => { if (!cancelled) setPostcardRender({ source: finishImage, to, message, from, image }); })
       .catch(() => { if (!cancelled) setToast(t(language, "drawError")); });
     return () => { cancelled = true; };
-  }, [finishOpen, finishImage, recipient, giftMessage, sender, language, backdrop]);
+  }, [finishOpen, finishImage, highResImage, recipient, giftMessage, sender, language, backdrop]);
   const changeLanguage = (next: Language) => {
     setLanguage(next);
     window.localStorage.setItem("bloomroom-language", next);
@@ -2122,6 +2184,7 @@ export default function FlowerStudio() {
     setHeld(null);
     setSelectedId(null);
     setDragId(null);
+    setHighResImage(null);
     window.history.replaceState(null, "", window.location.pathname);
   };
 
@@ -2148,10 +2211,10 @@ export default function FlowerStudio() {
     setSelectedId(null);
     setHeld(null);
     requestAnimationFrame(() => requestAnimationFrame(async () => {
-      const source = captureSceneRef.current?.();
-      if (!source) { setToast(t(language, "captureError")); return; }
+      const highResSource = captureSceneRef.current?.(true) || captureSceneRef.current?.();
+      if (!highResSource) { setToast(t(language, "captureError")); return; }
       const photo = new Image();
-      photo.src = source;
+      photo.src = highResSource;
       try { await photo.decode(); } catch { setToast(t(language, "captureError")); return; }
       const snapshot = document.createElement("canvas");
       const width = Math.min(photo.width, 1100);
@@ -2165,6 +2228,7 @@ export default function FlowerStudio() {
       context.fillRect(0, 0, width, height);
       context.drawImage(photo, 0, 0, width, height);
       setFinishImage(snapshot.toDataURL("image/jpeg", 0.88));
+      setHighResImage(highResSource);
       setShareUrl(null);
       setPostcardRender(null);
       setShareError("");
@@ -2246,9 +2310,16 @@ export default function FlowerStudio() {
     }
     try {
       if (mobileSave) {
-        const binary = atob(postcardImage.split(",")[1]);
-        const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
-        const file = new File([bytes], "bloomroom-postcard.png", { type: "image/png" });
+        let blob: Blob;
+        try {
+          const res = await fetch(postcardImage);
+          blob = await res.blob();
+        } catch {
+          const binary = atob(postcardImage.split(",")[1]);
+          const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+          blob = new Blob([bytes], { type: "image/png" });
+        }
+        const file = new File([blob], "bloomroom-postcard.png", { type: "image/png" });
         if (navigator.canShare?.({ files: [file] })) {
           try {
             await navigator.share({ files: [file], title: t(language, "postcardTitle") });
