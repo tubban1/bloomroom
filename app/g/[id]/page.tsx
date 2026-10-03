@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { getPostcard } from "@/lib/postcards";
 import { t, type Language } from "@/lib/translations";
+import PostcardAudioPlayer from "@/components/PostcardAudioPlayer";
 import styles from "./page.module.css";
 
 type Props = { params: Promise<{ id: string }>; searchParams?: Promise<{ lang?: string }> };
@@ -56,6 +57,13 @@ export default async function PostcardPage({ params, searchParams }: Props) {
         <p className={styles.kicker}>{t(language, "postcardKicker")}</p>
         {postcard.to_name && <p className={styles.to}>{t(language, "toName")} {postcard.to_name},</p>}
         <p className={styles.note}>{postcard.message || t(language, "defaultMessage")}</p>
+        {postcard.audio_path ? (
+          <PostcardAudioPlayer
+            postcardId={postcard.id}
+            language={language}
+            initialDurationMs={postcard.audio_duration_ms}
+          />
+        ) : null}
         <div className={styles.footer}>
           {postcard.from_name && <p className={styles.from}>{t(language, "fromName")} {postcard.from_name}</p>}
           <a className={styles.qrLink} href={shareUrl} aria-label={shareUrl}>

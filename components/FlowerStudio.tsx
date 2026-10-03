@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import AuthModal from "./AuthModal";
 import GardenModal from "./GardenModal";
+import VoiceRecorder from "./VoiceRecorder";
 import type { SafeUser } from "@/lib/auth";
 import {
   useEffectEvent,
@@ -1979,6 +1980,8 @@ export default function FlowerStudio() {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [shareError, setShareError] = useState("");
+  const [voiceBlob, setVoiceBlob] = useState<Blob | null>(null);
+  const [voiceDurationMs, setVoiceDurationMs] = useState<number>(0);
   const [toast, setToast] = useState<string | null>(null);
   const [user, setUser] = useState<SafeUser | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -2523,13 +2526,20 @@ export default function FlowerStudio() {
     setActiveDraftId(null);
     setActiveDraftVersion(1);
     setActiveDraftTitle("");
+    setVoiceBlob(null);
+    setVoiceDurationMs(0);
     window.localStorage.removeItem("bloomroom_pending_draft");
     window.history.replaceState(null, "", window.location.pathname);
   };
 
+  const closeFinish = () => {
+    setFinishOpen(false);
+    window.dispatchEvent(new CustomEvent("bloomroom-resume-ambient"));
+  };
+
   const handleKey = useEffectEvent((event: KeyboardEvent) => {
     if (event.target instanceof HTMLElement && (event.target.matches("input, textarea") || event.target.isContentEditable)) return;
-    if (event.key === "Escape") { setHeld(null); setSelectedId(null); setMobilePostcardOpen(false); setFinishOpen(false); return; }
+    if (event.key === "Escape") { setHeld(null); setSelectedId(null); setMobilePostcardOpen(false); closeFinish(); return; }
     if (finishOpen || dragId) return;
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
       event.preventDefault(); if (event.shiftKey) redo(); else undo();
@@ -2581,32 +2591,52 @@ export default function FlowerStudio() {
     setPublishing(true);
     setShareError("");
     try {
+      const formData = new FormData();
+      formData.append(
+        "bouquet",
+        encodeBouquet(
+          stems,
+          bouquetRotation,
+          vessel,
+          vesselColor,
+          vesselOpacity,
+          vesselScale,
+          backdrop,
+          lightWarmth,
+          lightDirection,
+        ),
+      );
+      formData.append("to", recipient);
+      formData.append("message", giftMessage);
+      formData.append("from", sender);
+
+      // Convert finishImage dataURL to Blob for efficient FormData transfer
+      if (finishImage.startsWith("data:image/")) {
+        const bin = atob(finishImage.split(",")[1]);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const imageBlob = new Blob([bytes], { type: "image/jpeg" });
+        formData.append("image", imageBlob, "postcard.jpg");
+      }
+
+      if (voiceBlob) {
+        const ext = voiceBlob.type.includes("mp4") || voiceBlob.type.includes("m4a") ? "m4a"
+          : voiceBlob.type.includes("ogg") ? "ogg"
+          : "webm";
+        formData.append("audio", voiceBlob, `voice.${ext}`);
+        formData.append("audioDurationMs", String(voiceDurationMs));
+      }
+
       const response = await fetch("/api/postcards", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bouquet: encodeBouquet(
-            stems,
-            bouquetRotation,
-            vessel,
-            vesselColor,
-            vesselOpacity,
-            vesselScale,
-            backdrop,
-            lightWarmth,
-            lightDirection,
-          ),
-          to: recipient,
-          message: giftMessage,
-          from: sender,
-          image: finishImage,
-        }),
+        body: formData,
       });
-      const result = await response.json() as { path?: string; error?: string };
-      if (!response.ok || !result.path) throw new Error(result.error || "Could not create a link.");
+      const result = (await response.json()) as { path?: string; error?: string };
+      if (!response.ok || !result.path) throw new Error(result.error || t(language, "savingError"));
       setShareUrl(`https://flower.fde.fan${result.path}?lang=${language}`);
-    } catch {
-      setShareError(t(language, "savingError"));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t(language, "savingError");
+      setShareError(msg || t(language, "savingError"));
     } finally {
       setPublishing(false);
     }
@@ -3200,7 +3230,7 @@ export default function FlowerStudio() {
                 className="close-finish"
                 type="button"
                 aria-label={t(language, "back")}
-                onClick={() => setFinishOpen(false)}
+                onClick={closeFinish}
               >
                 <X size={16} strokeWidth={1.5} />
               </button>
@@ -3228,6 +3258,15 @@ export default function FlowerStudio() {
                 <label htmlFor="gift-from">{t(language, "from")}</label>
                 <input id="gift-from" type="text" maxLength={64} placeholder={t(language, "senderPlaceholder")} value={sender}
                   onChange={(event) => { setSender(event.target.value); setShareUrl(null); }} />
+
+                <VoiceRecorder
+                  language={language}
+                  onRecordingChange={(blob, duration) => {
+                    setVoiceBlob(blob);
+                    setVoiceDurationMs(duration);
+                  }}
+                  disabled={publishing}
+                />
               </div>
 
               {shareUrl && <div className="share-result" aria-live="polite">
@@ -3249,14 +3288,14 @@ export default function FlowerStudio() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFinishOpen(false)}
+                  onClick={closeFinish}
                 >
                   {t(language, "back")}
                 </button>
               </div>
             </div>
           </div>
-          <button className="mobile-finish-close" type="button" aria-label={t(language, "back")} onClick={() => setFinishOpen(false)}>
+          <button className="mobile-finish-close" type="button" aria-label={t(language, "back")} onClick={closeFinish}>
             <X size={18} strokeWidth={1.5} />
           </button>
           {mobilePostcardOpen && postcardImage && (

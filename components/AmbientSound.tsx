@@ -102,6 +102,31 @@ export function AmbientSoundPanel({ currentId: externalId, onChange, language = 
     };
   }, []);
 
+  useEffect(() => {
+    let wasPlayingBeforePause = false;
+
+    const handlePause = () => {
+      if (audioRef.current && !audioRef.current.paused) {
+        wasPlayingBeforePause = true;
+        audioRef.current.pause();
+      }
+    };
+
+    const handleResume = () => {
+      if (wasPlayingBeforePause && audioRef.current) {
+        audioRef.current.play().catch(() => {});
+        wasPlayingBeforePause = false;
+      }
+    };
+
+    window.addEventListener("bloomroom-pause-ambient", handlePause);
+    window.addEventListener("bloomroom-resume-ambient", handleResume);
+    return () => {
+      window.removeEventListener("bloomroom-pause-ambient", handlePause);
+      window.removeEventListener("bloomroom-resume-ambient", handleResume);
+    };
+  }, []);
+
   const smoothFade = useCallback((targetVolume: number, onComplete?: () => void) => {
     if (!audioRef.current) return;
     if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);

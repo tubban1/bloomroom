@@ -2382,3 +2382,182 @@ button:focus-visible, input:focus-visible { outline: 2px solid #7a8965; outline-
   color: #24251f;
 }
 
+/* Voice Recorder in Postcard Finish Dialog */
+.voice-recorder-container {
+  margin: 10px 0 6px;
+  width: 100%;
+}
+
+.voice-record-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px dashed rgba(60, 56, 44, 0.28);
+  border-radius: 999px;
+  color: #555246;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+
+.voice-record-btn:hover:not(:disabled) {
+  background: rgba(71, 84, 67, 0.08);
+  border-color: #475443;
+  color: #313c2f;
+}
+
+.voice-record-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.voice-recording-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #fdf5f3;
+  border: 1px solid #f2c7c0;
+  border-radius: 999px;
+  padding: 6px 14px 6px 12px;
+  animation: fadeIn 200ms ease;
+}
+
+.voice-pulse-dot {
+  width: 9px;
+  height: 9px;
+  background: #d94b41;
+  border-radius: 50%;
+  animation: pulseRecording 1.2s infinite ease-in-out;
+}
+
+@keyframes pulseRecording {
+  0% { transform: scale(0.85); opacity: 0.7; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.85); opacity: 0.7; }
+}
+
+.voice-timer {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: #b5382f;
+}
+
+.voice-stop-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: #d94b41;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.voice-stop-btn:hover {
+  background: #bf3a30;
+}
+
+.voice-preview-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f1ede3;
+  border: 1px solid #ded8c8;
+  border-radius: 999px;
+  padding: 6px 10px 6px 8px;
+  max-width: 100%;
+  animation: fadeIn 200ms ease;
+}
+
+.voice-play-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: #475443;
+  color: #fff;
+  cursor: pointer;
+  transition: background 150ms ease, transform 100ms ease;
+  flex-shrink: 0;
+}
+
+.voice-play-btn:hover {
+  background: #394435;
+}
+
+.voice-play-btn:active {
+  transform: scale(0.95);
+}
+
+.voice-wave-bar {
+  flex: 1;
+  height: 4px;
+  background: #ddd7c6;
+  border-radius: 2px;
+  overflow: hidden;
+  min-width: 40px;
+}
+
+.voice-wave-progress {
+  height: 100%;
+  background: #475443;
+  border-radius: 2px;
+  transition: width 100ms linear;
+}
+
+.voice-duration {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: #777265;
+  white-space: nowrap;
+}
+
+.voice-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: transparent;
+  color: #635f52;
+  cursor: pointer;
+  transition: all 150ms ease;
+  flex-shrink: 0;
+}
+
+.voice-icon-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #21201b;
+}
+
+.voice-delete-btn:hover {
+  background: rgba(200, 50, 50, 0.08);
+  color: #c94a4a;
+  border-color: transparent;
+}
+
+.voice-error-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #b94a48;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
