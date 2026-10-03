@@ -664,6 +664,16 @@ function getRandomVessel(): VesselKind {
   return INITIAL_VESSEL_KINDS[Math.floor(Math.random() * INITIAL_VESSEL_KINDS.length)];
 }
 
+function getRandomVesselColor(kind: VesselKind): string {
+  const options = getVesselColors(kind);
+  return options[Math.floor(Math.random() * options.length)].color;
+}
+
+function getRandomVesselScale(): number {
+  const steps = [0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.15];
+  return steps[Math.floor(Math.random() * steps.length)];
+}
+
 function getRandomBackdrop(): BackdropKind {
   return BACKDROP_OPTIONS[Math.floor(Math.random() * BACKDROP_OPTIONS.length)].id;
 }
@@ -2009,9 +2019,9 @@ export default function FlowerStudio() {
   const [stems, setStems] = useState<Stem[]>([]);
   const [initialVessel] = useState<VesselKind>(getRandomVessel);
   const [vessel, setVessel] = useState<VesselKind>(initialVessel);
-  const [vesselColor, setVesselColor] = useState<string>(() => getDefaultVesselColor(initialVessel));
+  const [vesselColor, setVesselColor] = useState<string>(() => getRandomVesselColor(initialVessel));
   const [vesselOpacity, setVesselOpacity] = useState(100);
-  const [vesselScale, setVesselScale] = useState(1);
+  const [vesselScale, setVesselScale] = useState<number>(getRandomVesselScale);
   const [vesselAdjustOpen, setVesselAdjustOpen] = useState(false);
   const [libraryMode, setLibraryMode] = useState<LibraryMode>("flowers");
   const [vesselCategory, setVesselCategory] = useState<"vase" | "bouquet" | "imagination">(() => (
@@ -2026,7 +2036,6 @@ export default function FlowerStudio() {
   const [category, setCategory] = useState<FlowerCategory>("main");
   const [wind, setWind] = useState(getRandomWind);
   const [bouquetRotation, setBouquetRotation] = useState<BouquetRotation>({ ...DEFAULT_BOUQUET_ROTATION });
-  const [rotationOpen, setRotationOpen] = useState(false);
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   const [finishOpen, setFinishOpen] = useState(false);
   const [finishImage, setFinishImage] = useState<string | null>(null);
@@ -2697,10 +2706,10 @@ export default function FlowerStudio() {
     const nextVessel = getRandomVessel();
     const nextCategory = VESSEL_OPTIONS.find((opt) => opt.kind === nextVessel)?.category ?? "vase";
     setVessel(nextVessel);
-    setVesselColor(getDefaultVesselColor(nextVessel));
+    setVesselColor(getRandomVesselColor(nextVessel));
     setVesselCategory(nextCategory);
     setVesselOpacity(100);
-    setVesselScale(1);
+    setVesselScale(getRandomVesselScale());
     setBouquetRotation({ ...DEFAULT_BOUQUET_ROTATION });
     setBackdrop(getRandomBackdrop());
     setLightWarmth(getRandomLightWarmth());
@@ -3047,7 +3056,14 @@ export default function FlowerStudio() {
         </div>
       </header>
 
-      <section className="workspace" aria-label={t(language, "brand")} data-library-mode={libraryMode} data-editing={selectedStem ? "true" : "false"}>
+      <section
+        className="workspace"
+        aria-label={t(language, "brand")}
+        data-library-mode={libraryMode}
+        data-editing={selectedStem ? "true" : "false"}
+        data-tools-open={mobileToolsOpen ? "true" : "false"}
+        data-vessel-open={vesselAdjustOpen ? "true" : "false"}
+      >
         <div className="hero-copy">
           <div className="eyebrow">{t(language, "step")}</div>
           <h1>{t(language, "headline")}</h1>
@@ -3235,6 +3251,22 @@ export default function FlowerStudio() {
         <button type="button" className="vessel-adjust-toggle" aria-expanded={vesselAdjustOpen} aria-controls="vessel-adjust-panel" disabled={vessel === "naked"} onClick={() => { setVesselAdjustOpen((open) => !open); setSelectedId(null); setMobileToolsOpen(false); }}><SlidersHorizontal size={15} /> {t(language, "adjustContainer")}</button>
         {vesselAdjustOpen && vessel !== "naked" && <section id="vessel-adjust-panel" className="selection-card vessel-adjust-panel" aria-label={t(language, "adjustContainer")}>
           <div className="vessel-adjust-heading"><strong>{t(language, "adjustContainer")}</strong><button type="button" aria-label={t(language, "done")} onClick={() => setVesselAdjustOpen(false)}><X size={17} /></button></div>
+          <div className="vessel-rotate-guide">
+            <p className="vessel-rotate-hint">{t(language, "rotateHint")}</p>
+            {(bouquetRotation.x !== 0 || bouquetRotation.y !== 0 || bouquetRotation.z !== 0) && (
+              <button
+                type="button"
+                className="vessel-rotation-reset"
+                onClick={() => {
+                  checkpoint();
+                  setBouquetRotation({ ...DEFAULT_BOUQUET_ROTATION });
+                }}
+              >
+                <RotateCcw size={12} />
+                <span>{t(language, "resetRotation")}</span>
+              </button>
+            )}
+          </div>
             <div className="vessel-appearance">
               <span className="vessel-appearance-title">{t(language, "containerColor")}</span>
               <div className="color-options" role="group" aria-label={t(language, "containerColor")}>
@@ -3269,15 +3301,26 @@ export default function FlowerStudio() {
         </section>}
 
         <button type="button" className="mobile-tools-toggle" aria-expanded={mobileToolsOpen} aria-controls="studio-scene-tools"
-          onClick={() => { setMobileToolsOpen((open) => !open); setSelectedId(null); }}>
+          onClick={() => { setMobileToolsOpen((open) => !open); setSelectedId(null); setVesselAdjustOpen(false); }}>
           {mobileToolsOpen ? <X size={17} /> : <SlidersHorizontal size={17} />}
           <span>{t(language, "tools")}</span>
         </button>
         <aside id="studio-scene-tools" className={mobileToolsOpen ? "scene-tools mobile-open" : "scene-tools"} aria-label={t(language, "tools")}>
+          <div className="mobile-tools-header">
+            <strong>{t(language, "tools")}</strong>
+            <button
+              type="button"
+              className="mobile-tools-close"
+              onClick={() => setMobileToolsOpen(false)}
+              aria-label={t(language, "done")}
+            >
+              <X size={17} />
+            </button>
+          </div>
           <div className="tool-section">
             <button type="button" className="adjust-toggle" disabled={!stems.length}
               aria-expanded={!!selectedStem}
-              onClick={() => { setVesselAdjustOpen(false); setSelectedId(selectedStem ? null : stems[0].id); }}>
+              onClick={() => { setVesselAdjustOpen(false); setSelectedId(selectedStem ? null : stems[0].id); setMobileToolsOpen(false); }}>
               <span>{t(language, "adjust")}</span><span>{stems.length}</span>
             </button>
             <p className="rotation-hint">{t(language, "adjustHint")}</p>
@@ -3346,93 +3389,6 @@ export default function FlowerStudio() {
           </div>
 
           <AmbientSoundPanel language={language} />
-
-          <div className="tool-section rotation-section">
-            <button
-              type="button"
-              className="rotation-toggle"
-              aria-expanded={rotationOpen}
-              aria-controls="bouquet-rotation-controls"
-              aria-describedby="bouquet-rotation-hint"
-              title={t(language, "rotateHint")}
-              onClick={() => setRotationOpen((open) => !open)}
-            >
-              <span>{t(language, "rotateVase")}</span>
-              <RotateCcw size={13} strokeWidth={1.5} />
-            </button>
-            <p className="rotation-hint" id="bouquet-rotation-hint">
-              <span className="rotation-hint-desktop">{t(language, "rotateHint")}</span>
-              <span className="rotation-hint-touch">{t(language, "rotateTouchHint")}</span>
-            </p>
-            <div id="bouquet-rotation-controls" className="rotation-controls" hidden={!rotationOpen}>
-                <div className="rotation-axis">
-                  <label htmlFor="bouquet-rotation-x">
-                    <span>X · {t(language, "tilt")}</span><span>{Math.round(bouquetRotation.x)}°</span>
-                  </label>
-                  <input
-                    id="bouquet-rotation-x"
-                    className="range"
-                    type="range"
-                    min="-35"
-                    max="35"
-                    step="1"
-                    value={bouquetRotation.x}
-                    aria-label={`${t(language, "tilt")} X`}
-                    onPointerDown={checkpoint}
-                    onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) checkpoint(); }}
-                    onChange={(event) => setBouquetRotation((current) => ({ ...current, x: Number(event.target.value) }))}
-                  />
-                </div>
-                <div className="rotation-axis">
-                  <label htmlFor="bouquet-rotation-y">
-                    <span>Y · {t(language, "turn")}</span><span>{Math.round(bouquetRotation.y)}°</span>
-                  </label>
-                  <input
-                    id="bouquet-rotation-y"
-                    className="range"
-                    type="range"
-                    min="-180"
-                    max="180"
-                    step="1"
-                    value={bouquetRotation.y}
-                    aria-label={`${t(language, "turn")} Y`}
-                    onPointerDown={checkpoint}
-                    onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) checkpoint(); }}
-                    onChange={(event) => setBouquetRotation((current) => ({ ...current, y: Number(event.target.value) }))}
-                  />
-                </div>
-                <div className="rotation-axis">
-                  <label htmlFor="bouquet-rotation-z">
-                    <span>Z · {t(language, "roll")}</span><span>{Math.round(bouquetRotation.z)}°</span>
-                  </label>
-                  <input
-                    id="bouquet-rotation-z"
-                    className="range"
-                    type="range"
-                    min="-35"
-                    max="35"
-                    step="1"
-                    value={bouquetRotation.z}
-                    aria-label={`${t(language, "roll")} Z`}
-                    onPointerDown={checkpoint}
-                    onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) checkpoint(); }}
-                    onChange={(event) => setBouquetRotation((current) => ({ ...current, z: Number(event.target.value) }))}
-                  />
-                </div>
-                <button
-                  type="button"
-                  className="rotation-reset"
-                  onClick={() => {
-                    if (bouquetRotation.x || bouquetRotation.y || bouquetRotation.z) {
-                      checkpoint();
-                      setBouquetRotation({ ...DEFAULT_BOUQUET_ROTATION });
-                    }
-                  }}
-                >
-                  {t(language, "resetRotation")}
-                </button>
-            </div>
-          </div>
         </aside>
 
         {selectedStem ? <StemAdjustmentControls
