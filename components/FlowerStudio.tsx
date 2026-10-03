@@ -123,6 +123,8 @@ type BouquetRotation = { x: number; y: number; z: number };
 
 export const BOUQUET_CENTER_X = -0.42;
 
+export type BackdropKind = "linen" | "limestone" | "charcoal" | "forest";
+
 export type LightPresetKind = "morning" | "daylight" | "twilight" | "oil";
 
 export const LIGHT_PRESETS: {
@@ -130,12 +132,17 @@ export const LIGHT_PRESETS: {
   labelKey: "morningLight" | "daylight" | "twilight" | "oilPainting";
   warmth: number;
   direction: number;
+  backdrop: BackdropKind;
 }[] = [
-  { id: "morning", labelKey: "morningLight", warmth: -15, direction: -45 },
-  { id: "daylight", labelKey: "daylight", warmth: 0, direction: -15 },
-  { id: "twilight", labelKey: "twilight", warmth: 45, direction: 60 },
-  { id: "oil", labelKey: "oilPainting", warmth: 30, direction: -50 },
+  { id: "morning", labelKey: "morningLight", warmth: -15, direction: -45, backdrop: "linen" },
+  { id: "daylight", labelKey: "daylight", warmth: 0, direction: -15, backdrop: "limestone" },
+  { id: "twilight", labelKey: "twilight", warmth: 45, direction: 60, backdrop: "linen" },
+  { id: "oil", labelKey: "oilPainting", warmth: 30, direction: -50, backdrop: "charcoal" },
 ];
+
+export function getRandomLightPreset() {
+  return LIGHT_PRESETS[Math.floor(Math.random() * LIGHT_PRESETS.length)];
+}
 
 function subscribeMobileLayout(callback: () => void) {
   const query = window.matchMedia("(max-width: 760px)");
@@ -148,8 +155,6 @@ function mobileLayoutSnapshot() {
 }
 
 export type StudioDrawer = "scene" | "flowers" | "vessels" | "sound";
-
-export type BackdropKind = "linen" | "limestone" | "charcoal" | "forest";
 
 export const BACKDROP_CONFIG: Record<BackdropKind, {
   color: string;
@@ -990,7 +995,7 @@ function FlowerStem({
   useFrame(({ clock, camera }, delta) => {
     if (!group.current || ghost) return;
     const t = clock.elapsedTime;
-    const breeze = selected ? 0 : wind * 0.12 * (1 + Math.sin(t * 0.27) * 0.15);
+    const breeze = (selected || wrapped) ? 0 : wind * 0.08 * (1 + Math.sin(t * 0.27) * 0.15);
     group.current.rotation.z = THREE.MathUtils.damp(
       group.current.rotation.z, Math.sin(t * 0.85 + stem.seed * 0.35) * breeze, 6, delta,
     );
@@ -2059,18 +2064,22 @@ export default function FlowerStudio() {
   const [vesselOpacity, setVesselOpacity] = useState(100);
   const [vesselScale, setVesselScale] = useState<number>(getRandomVesselScale);
   const isMobileLayout = useSyncExternalStore(subscribeMobileLayout, mobileLayoutSnapshot, () => false);
-  const [activeDrawer, setActiveDrawer] = useState<StudioDrawer | null>("scene");
+  const [activeDrawer, setActiveDrawer] = useState<StudioDrawer | null>(() => (
+    typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches ? "flowers" : "scene"
+  ));
+  const [fineTuneLightOpen, setFineTuneLightOpen] = useState(true);
   const [vesselCategory, setVesselCategory] = useState<"vase" | "bouquet" | "imagination">(() => (
     VESSEL_OPTIONS.find((option) => option.kind === initialVessel)?.category ?? "vase"
   ));
   const [held, setHeld] = useState<FlowerKind | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
-  const [lightWarmth, setLightWarmth] = useState(getRandomLightWarmth);
-  const [lightDirection, setLightDirection] = useState(getRandomLightDirection);
-  const [backdrop, setBackdrop] = useState<BackdropKind>(getRandomBackdrop);
+  const [initialLightPreset] = useState(getRandomLightPreset);
+  const [lightWarmth, setLightWarmth] = useState(initialLightPreset.warmth);
+  const [lightDirection, setLightDirection] = useState(initialLightPreset.direction);
+  const [backdrop, setBackdrop] = useState<BackdropKind>(initialLightPreset.backdrop);
   const [category, setCategory] = useState<FlowerCategory>("main");
-  const [wind, setWind] = useState(getRandomWind);
+  const [wind, setWind] = useState(0);
   const [bouquetRotation, setBouquetRotation] = useState<BouquetRotation>({ ...DEFAULT_BOUQUET_ROTATION });
   const [finishOpen, setFinishOpen] = useState(false);
   const [finishImage, setFinishImage] = useState<string | null>(null);
@@ -2245,6 +2254,12 @@ export default function FlowerStudio() {
     if (id && isMobileLayout) setActiveDrawer("flowers");
   };
 
+
+  useEffect(() => {
+    if (isMobileLayout && activeDrawer === "scene") {
+      setActiveDrawer("flowers");
+    }
+  }, [isMobileLayout]);
 
   useEffect(() => {
     const handleRestore = () => {
@@ -2752,10 +2767,11 @@ export default function FlowerStudio() {
     setVesselOpacity(100);
     setVesselScale(getRandomVesselScale());
     setBouquetRotation({ ...DEFAULT_BOUQUET_ROTATION });
-    setBackdrop(getRandomBackdrop());
-    setLightWarmth(getRandomLightWarmth());
-    setLightDirection(getRandomLightDirection());
-    setWind(getRandomWind());
+    const nextLightPreset = getRandomLightPreset();
+    setBackdrop(nextLightPreset.backdrop);
+    setLightWarmth(nextLightPreset.warmth);
+    setLightDirection(nextLightPreset.direction);
+    setWind(0);
     setHeld(null);
     setSelectedId(null);
     setDragId(null);
@@ -3264,17 +3280,6 @@ export default function FlowerStudio() {
         {/* Auxiliary tools; mobile includes the flower library. */}
         <div className={`studio-drawers ${drawerOpen ? "has-open" : "collapsed"}`}>
           <nav className="studio-tabs-bar" role="tablist" aria-label={t(language, "tools")}>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={!selectedStem && toolDrawer === "scene"}
-              className={`studio-tab-btn ${!selectedStem && toolDrawer === "scene" ? "active" : ""}`}
-              onClick={() => { setSelectedId(null); setActiveDrawer((cur) => cur === "scene" ? null : "scene"); }}
-              title={t(language, "scene")}
-            >
-              <Sparkles size={14} />
-              <span>{t(language, "scene")}</span>
-            </button>
             {isMobileLayout ? (
               <button
                 type="button"
@@ -3288,6 +3293,17 @@ export default function FlowerStudio() {
                 <span>{t(language, "flowers")}</span>
               </button>
             ) : null}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={!selectedStem && toolDrawer === "scene"}
+              className={`studio-tab-btn ${!selectedStem && toolDrawer === "scene" ? "active" : ""}`}
+              onClick={() => { setSelectedId(null); setActiveDrawer((cur) => cur === "scene" ? null : "scene"); }}
+              title={t(language, "scene")}
+            >
+              <Sparkles size={14} />
+              <span>{t(language, "scene")}</span>
+            </button>
             <button
               type="button"
               role="tab"
@@ -3315,8 +3331,9 @@ export default function FlowerStudio() {
           <aside className={`studio-drawer-panel ${drawerOpen ? "open" : "closed"}`} aria-label={t(language, "tools")}>
             <div className="drawer-panel-header">
               <strong>
+                {!selectedStem && toolDrawer === "flowers" && t(language, "flowers")}
                 {!selectedStem && toolDrawer === "scene" && t(language, "scene")}
-                {selectedStem ? `${t(language, "adjust")} · ${flowerName(language, selectedStem.kind)}` : toolDrawer === "flowers" ? t(language, "flowers") : null}
+                {selectedStem ? `${t(language, "adjust")} · ${flowerName(language, selectedStem.kind)}` : null}
                 {!selectedStem && toolDrawer === "vessels" && t(language, "adjustContainer")}
                 {!selectedStem && toolDrawer === "sound" && t(language, "ambience")}
               </strong>
@@ -3341,7 +3358,7 @@ export default function FlowerStudio() {
                   </div>
                   <div className="light-presets-row" role="group" aria-label={t(language, "lighting")}>
                     {LIGHT_PRESETS.map((preset) => {
-                      const isSelected = lightWarmth === preset.warmth && lightDirection === preset.direction;
+                      const isSelected = lightWarmth === preset.warmth && lightDirection === preset.direction && backdrop === preset.backdrop;
                       return (
                         <button
                           key={preset.id}
@@ -3352,6 +3369,7 @@ export default function FlowerStudio() {
                             checkpoint();
                             setLightWarmth(preset.warmth);
                             setLightDirection(preset.direction);
+                            setBackdrop(preset.backdrop);
                           }}
                         >
                           {t(language, preset.labelKey)}
@@ -3406,14 +3424,18 @@ export default function FlowerStudio() {
                       className={`studio-switch ${wind > 0 ? "active" : ""}`}
                       onClick={() => {
                         checkpoint();
-                        setWind(wind > 0 ? 0 : 0.32);
+                        setWind(wind > 0 ? 0 : 0.25);
                       }}
                     >
                       <span className="studio-switch-thumb" />
                     </button>
                   </div>
                 </div>
-                <details className="light-fine-tuning">
+                <details
+                  className="light-fine-tuning"
+                  open={fineTuneLightOpen}
+                  onToggle={(e) => setFineTuneLightOpen(e.currentTarget.open)}
+                >
                   <summary>{t(language, "fineTuneLight")}</summary>
                   <div className="tool-section">
                     <label className="light-control" htmlFor="light-warmth">
