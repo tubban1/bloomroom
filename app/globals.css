@@ -4120,3 +4120,62 @@ button:focus-visible, input:focus-visible { outline: 2px solid #7a8965; outline-
   overflow: visible;
   overscroll-behavior: auto;
 }
+
+/* Flower materials stay available throughout desktop arranging. */
+.studio-flower-library {
+  position: absolute;
+  z-index: 20;
+  left: 20px;
+  top: 18px;
+  bottom: 20px;
+  width: clamp(220px, 20vw, 260px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(24px) saturate(120%);
+  overflow: hidden;
+}
+
+.studio-flower-library .flower-grid {
+  overflow: visible;
+}
+
+.light-fine-tuning summary {
+  padding: 14px;
+  cursor: pointer;
+  color: var(--ink);
+  font-size: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.light-fine-tuning summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+
+@media (min-width: 761px) {
+  .studio-drawers { width: 300px; }
+  .studio-tabs-bar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .canvas-wrap {
+    left: calc(clamp(220px, 20vw, 260px) + 40px);
+    right: 340px;
+  }
+  .workspace[data-drawer-open="false"] .canvas-wrap { right: 0; }
+  .studio-flower-library .adjust-toggle { width: 100%; }
+}
+
+@media (min-width: 761px) {
+  .workspace > .hero-copy { display: none; }
+  .studio-flower-library .stem-adjust-entry .rotation-hint { display: none; }
+  .studio-flower-library .category-tab { padding-inline: 3px; }
+  .studio-flower-library .category-tab span {
+    font-size: 9px;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+}

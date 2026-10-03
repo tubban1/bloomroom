@@ -44,6 +44,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import * as THREE from "three";
 import { minimumStemHeight } from "../lib/stem-geometry";
@@ -129,13 +130,22 @@ export const LIGHT_PRESETS: {
   labelKey: "morningLight" | "daylight" | "twilight" | "oilPainting";
   warmth: number;
   direction: number;
-  backdrop: BackdropKind;
 }[] = [
-  { id: "morning", labelKey: "morningLight", warmth: -15, direction: -45, backdrop: "linen" },
-  { id: "daylight", labelKey: "daylight", warmth: 0, direction: -15, backdrop: "limestone" },
-  { id: "twilight", labelKey: "twilight", warmth: 45, direction: 60, backdrop: "linen" },
-  { id: "oil", labelKey: "oilPainting", warmth: 30, direction: -50, backdrop: "charcoal" },
+  { id: "morning", labelKey: "morningLight", warmth: -15, direction: -45 },
+  { id: "daylight", labelKey: "daylight", warmth: 0, direction: -15 },
+  { id: "twilight", labelKey: "twilight", warmth: 45, direction: 60 },
+  { id: "oil", labelKey: "oilPainting", warmth: 30, direction: -50 },
 ];
+
+function subscribeMobileLayout(callback: () => void) {
+  const query = window.matchMedia("(max-width: 760px)");
+  query.addEventListener("change", callback);
+  return () => query.removeEventListener("change", callback);
+}
+
+function mobileLayoutSnapshot() {
+  return window.matchMedia("(max-width: 760px)").matches;
+}
 
 export type StudioDrawer = "scene" | "flowers" | "vessels" | "sound";
 
@@ -977,14 +987,16 @@ function FlowerStem({
 
   const tip = useMemo(() => curve.getPoint(1), [curve]);
 
-  useFrame(({ clock, camera }) => {
+  useFrame(({ clock, camera }, delta) => {
     if (!group.current || ghost) return;
     const t = clock.elapsedTime;
-    const breeze = selected ? 0 : wind * 0.009;
-    group.current.rotation.z =
-      Math.sin(t * 1.3 + stem.seed) * breeze;
-    group.current.rotation.x =
-      Math.cos(t * 0.95 + stem.seed * 1.7) * breeze * 0.5;
+    const breeze = selected ? 0 : wind * 0.12 * (1 + Math.sin(t * 0.27) * 0.15);
+    group.current.rotation.z = THREE.MathUtils.damp(
+      group.current.rotation.z, Math.sin(t * 0.85 + stem.seed * 0.35) * breeze, 6, delta,
+    );
+    group.current.rotation.x = THREE.MathUtils.damp(
+      group.current.rotation.x, Math.cos(t * 0.65 + stem.seed * 0.45) * breeze * 0.55, 6, delta,
+    );
     if (selected && importedVisual.current && selectionRing.current) {
       importedVisual.current.updateWorldMatrix(true, true);
       const { box, corner, center, edge, rotation } = selectionBounds;
@@ -1623,6 +1635,9 @@ function StudioScene({
     Math.abs(lightWarmth) / 100 * 0.8,
   );
   const lightAngle = lightDirection * Math.PI / 180;
+  const sideLight = Math.abs(Math.sin(lightAngle));
+  const lightHeight = Math.max(2.2, 7.4 - Math.max(0, lightWarmth) / 100 * 8);
+
 
   const handleMove = (event: ThreeEvent<PointerEvent>) => {
     if (held) setHoverPoint(pointToStudioSpace(event.point));
@@ -1641,16 +1656,16 @@ function StudioScene({
     <>
       <CameraRig bouquetRef={bouquetGroupRef} dragging={Boolean(dragId)} />
       <fog attach="fog" args={[sceneColors.fog, 11, 20]} />
-      <hemisphereLight args={["#fff7ec", "#8c9276", 0.8]} />
+      <hemisphereLight args={["#fff7ec", "#8c9276", 0.7 - sideLight * 0.3]} />
       <ambientLight
-        intensity={1.1}
+        intensity={1.05 - sideLight * 0.65}
         color={sceneColors.fill}
       />
       <directionalLight
         castShadow
-        position={[Math.sin(lightAngle) * 6.73, 7.4, Math.cos(lightAngle) * 6.73]}
+        position={[Math.sin(lightAngle) * 6.73, lightHeight, Math.cos(lightAngle) * 6.73]}
         color={keyColor}
-        intensity={2.1}
+        intensity={2.4 + sideLight * 0.5}
         shadow-mapSize={[2048, 2048]}
         shadow-radius={4}
         shadow-bias={-0.0004}
@@ -1664,7 +1679,7 @@ function StudioScene({
       />
       <pointLight
         position={[4, 3.5, 2]}
-        intensity={0.7}
+        intensity={0.5 - sideLight * 0.3}
         color="#ffffff"
       />
 
@@ -2043,6 +2058,7 @@ export default function FlowerStudio() {
   const [vesselColor, setVesselColor] = useState<string>(() => getRandomVesselColor(initialVessel));
   const [vesselOpacity, setVesselOpacity] = useState(100);
   const [vesselScale, setVesselScale] = useState<number>(getRandomVesselScale);
+  const isMobileLayout = useSyncExternalStore(subscribeMobileLayout, mobileLayoutSnapshot, () => false);
   const [activeDrawer, setActiveDrawer] = useState<StudioDrawer | null>("scene");
   const [vesselCategory, setVesselCategory] = useState<"vase" | "bouquet" | "imagination">(() => (
     VESSEL_OPTIONS.find((option) => option.kind === initialVessel)?.category ?? "vase"
@@ -2222,6 +2238,13 @@ export default function FlowerStudio() {
   const selectedStem = stems.find((stem) => stem.id === selectedId) ?? null;
   const selectedColors = selectedStem ? getFlowerColors(selectedStem.kind) : [];
   const selectedColorVariant = selectedStem?.colorVariant ?? "natural";
+  const toolDrawer = !isMobileLayout && activeDrawer === "flowers" ? "scene" : activeDrawer;
+  const drawerOpen = Boolean(selectedStem || toolDrawer);
+  const selectStem = (id: string | null) => {
+    setSelectedId(id);
+    if (id && isMobileLayout) setActiveDrawer("flowers");
+  };
+
 
   useEffect(() => {
     const handleRestore = () => {
@@ -2323,7 +2346,6 @@ export default function FlowerStudio() {
         setToast(t(language, "tapToAdjust"));
       } else {
         setSelectedId(next.id);
-        setActiveDrawer("flowers");
       }
       setHeld(null);
     },
@@ -2973,6 +2995,99 @@ export default function FlowerStudio() {
     }
   };
 
+  const flowerLibrary = <>
+    {stems.length > 0 && (
+      <div className="tool-section stem-adjust-entry">
+        <button
+          type="button"
+          className="adjust-toggle"
+          aria-expanded={false}
+          onClick={() => selectStem(stems[stems.length - 1].id)}
+        >
+          <span>{t(language, "adjust")}</span>
+          <span>{stems.length}</span>
+        </button>
+        <p className="rotation-hint">{t(language, "adjustHint")}</p>
+      </div>
+    )}
+
+    <div className="category-tabs" role="tablist" aria-label={t(language, "flowers")}>
+      {(Object.keys(CATEGORY_LABELS) as FlowerCategory[]).map((item) => {
+        const count = FLOWERS.filter((flower) => flower.category === item && flower.kind !== "blue-poppy").length;
+        return (
+          <button
+            key={item}
+            type="button"
+            role="tab"
+            aria-selected={category === item}
+            className={category === item ? "category-tab active" : "category-tab"}
+            onClick={() => setCategory(item)}
+          >
+            <span>{categoryName(language, item)}</span>
+            <small>{count}</small>
+          </button>
+        );
+      })}
+    </div>
+
+    <div className="flower-grid">
+      {FLOWERS.filter((flower) => flower.category === category && flower.kind !== "blue-poppy").map((flower) => (
+        <button
+          key={flower.kind}
+          className={held === flower.kind ? "flower-card is-held" : "flower-card"}
+          type="button"
+          aria-pressed={held === flower.kind}
+          onPointerDown={(event) => {
+            if (event.button !== 0 || event.pointerType === "touch") return;
+            suppressClick.current = false;
+            paletteDrag.current = { x: event.clientX, y: event.clientY, moved: false };
+            event.currentTarget.setPointerCapture(event.pointerId);
+          }}
+          onPointerMove={(event) => {
+            if (event.pointerType === "touch") return;
+            const active = paletteDrag.current;
+            if (!active || !event.currentTarget.hasPointerCapture(event.pointerId)) return;
+            if (!active.moved && Math.hypot(event.clientX - active.x, event.clientY - active.y) < 7) return;
+            active.moved = true;
+            setHeld(flower.kind);
+            setSelectedId(null);
+            projectPointerRef.current?.(event.clientX, event.clientY);
+          }}
+          onPointerUp={(event) => {
+            const active = paletteDrag.current;
+            paletteDrag.current = null;
+            if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+            if (!active?.moved) return;
+            suppressClick.current = true;
+            const target = document.elementFromPoint(event.clientX, event.clientY);
+            if (target?.closest(".canvas-wrap")) {
+              const point = projectPointerRef.current?.(event.clientX, event.clientY);
+              if (point) placeFlower(point, flower.kind);
+            } else setHeld(null);
+          }}
+          onPointerCancel={() => { paletteDrag.current = null; setHeld(null); }}
+          onClick={() => {
+            if (suppressClick.current) { suppressClick.current = false; return; }
+            placeFlower(autoPlacementPoint(flower.kind, stems, vessel, vesselScale), flower.kind);
+          }}
+        >
+          <FlowerThumbnail kind={flower.kind} />
+          <span className="flower-card-plus" aria-hidden="true">+</span>
+          <strong>{flowerName(language, flower.kind)}</strong>
+          <small>{flower.latin}</small>
+          {stems.some((stem) => stem.kind === flower.kind) ? (
+            <span className="added-indicator">{t(language, "added")} · {stems.filter((stem) => stem.kind === flower.kind).length}</span>
+          ) : null}
+          {flower.availability !== "available" ? (
+            <span className={`availability ${flower.availability}`}>
+              {flower.availability === "play" ? t(language, "studioOnly") : t(language, "preorder")}
+            </span>
+          ) : null}
+        </button>
+      ))}
+    </div>
+  </>;
+
   return (
     <main className="studio" lang={language === "zh" ? "zh-CN" : language}>
       <header className="topbar">
@@ -3078,8 +3193,8 @@ export default function FlowerStudio() {
       <section
         className="workspace"
         aria-label={t(language, "brand")}
-        data-drawer={activeDrawer ?? "none"}
-        data-drawer-open={activeDrawer ? "true" : "false"}
+        data-drawer={toolDrawer ?? "none"}
+        data-drawer-open={drawerOpen ? "true" : "false"}
         data-editing={selectedStem ? "true" : "false"}
       >
         <div className="hero-copy">
@@ -3126,7 +3241,7 @@ export default function FlowerStudio() {
               held={held}
               selectedId={selectedId}
               dragId={dragId}
-              onSelect={(id) => { setSelectedId(id); if (id) setActiveDrawer("flowers"); }}
+              onSelect={selectStem}
               onDragStart={(id) => { checkpoint(); setDragId(id); }}
               onPlace={placeFlower}
               onDrag={dragFlower}
@@ -3139,36 +3254,45 @@ export default function FlowerStudio() {
           </Canvas>
         </div>
 
-        {/* 右侧四个窗口抽屉系统 */}
-        <div className={`studio-drawers ${activeDrawer ? "has-open" : "collapsed"}`}>
+        {!isMobileLayout ? (
+          <aside className="studio-flower-library" aria-label={t(language, "flowers")}>
+            <div className="drawer-panel-header"><strong>{t(language, "flowers")}</strong></div>
+            <div className="drawer-panel-body">{flowerLibrary}</div>
+          </aside>
+        ) : null}
+
+        {/* Auxiliary tools; mobile includes the flower library. */}
+        <div className={`studio-drawers ${drawerOpen ? "has-open" : "collapsed"}`}>
           <nav className="studio-tabs-bar" role="tablist" aria-label={t(language, "tools")}>
             <button
               type="button"
               role="tab"
-              aria-selected={activeDrawer === "scene"}
-              className={`studio-tab-btn ${activeDrawer === "scene" ? "active" : ""}`}
+              aria-selected={!selectedStem && toolDrawer === "scene"}
+              className={`studio-tab-btn ${!selectedStem && toolDrawer === "scene" ? "active" : ""}`}
               onClick={() => { setSelectedId(null); setActiveDrawer((cur) => cur === "scene" ? null : "scene"); }}
               title={t(language, "scene")}
             >
               <Sparkles size={14} />
               <span>{t(language, "scene")}</span>
             </button>
+            {isMobileLayout ? (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeDrawer === "flowers"}
+                className={`studio-tab-btn ${activeDrawer === "flowers" ? "active" : ""}`}
+                onClick={() => { setSelectedId(null); setActiveDrawer((cur) => cur === "flowers" ? null : "flowers"); }}
+                title={t(language, "flowers")}
+              >
+                <Flower2 size={14} />
+                <span>{t(language, "flowers")}</span>
+              </button>
+            ) : null}
             <button
               type="button"
               role="tab"
-              aria-selected={activeDrawer === "flowers"}
-              className={`studio-tab-btn ${activeDrawer === "flowers" ? "active" : ""}`}
-              onClick={() => { setSelectedId(null); setActiveDrawer((cur) => cur === "flowers" ? null : "flowers"); }}
-              title={t(language, "flowers")}
-            >
-              <Flower2 size={14} />
-              <span>{t(language, "flowers")}</span>
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeDrawer === "vessels"}
-              className={`studio-tab-btn ${activeDrawer === "vessels" ? "active" : ""}`}
+              aria-selected={!selectedStem && toolDrawer === "vessels"}
+              className={`studio-tab-btn ${!selectedStem && toolDrawer === "vessels" ? "active" : ""}`}
               onClick={() => { setSelectedId(null); setActiveDrawer((cur) => cur === "vessels" ? null : "vessels"); }}
               title={t(language, "adjustContainer")}
             >
@@ -3178,8 +3302,8 @@ export default function FlowerStudio() {
             <button
               type="button"
               role="tab"
-              aria-selected={activeDrawer === "sound"}
-              className={`studio-tab-btn ${activeDrawer === "sound" ? "active" : ""}`}
+              aria-selected={!selectedStem && toolDrawer === "sound"}
+              className={`studio-tab-btn ${!selectedStem && toolDrawer === "sound" ? "active" : ""}`}
               onClick={() => { setSelectedId(null); setActiveDrawer((cur) => cur === "sound" ? null : "sound"); }}
               title={t(language, "ambience")}
             >
@@ -3188,13 +3312,13 @@ export default function FlowerStudio() {
             </button>
           </nav>
 
-          <aside className={`studio-drawer-panel ${activeDrawer ? "open" : "closed"}`} aria-label={t(language, "tools")}>
+          <aside className={`studio-drawer-panel ${drawerOpen ? "open" : "closed"}`} aria-label={t(language, "tools")}>
             <div className="drawer-panel-header">
               <strong>
-                {activeDrawer === "scene" && t(language, "scene")}
-                {activeDrawer === "flowers" && t(language, "flowers")}
-                {activeDrawer === "vessels" && t(language, "adjustContainer")}
-                {activeDrawer === "sound" && t(language, "ambience")}
+                {!selectedStem && toolDrawer === "scene" && t(language, "scene")}
+                {selectedStem ? `${t(language, "adjust")} · ${flowerName(language, selectedStem.kind)}` : toolDrawer === "flowers" ? t(language, "flowers") : null}
+                {!selectedStem && toolDrawer === "vessels" && t(language, "adjustContainer")}
+                {!selectedStem && toolDrawer === "sound" && t(language, "ambience")}
               </strong>
               <button
                 type="button"
@@ -3208,7 +3332,35 @@ export default function FlowerStudio() {
 
             <div className="drawer-panel-body">
               {/* 1. 场景 */}
-              <div className="drawer-pane" style={{ display: activeDrawer === "scene" ? "block" : "none" }}>
+              <div className="drawer-pane" style={{ display: !selectedStem && toolDrawer === "scene" ? "block" : "none" }}>
+                {/* 光影预设 [ 晨光 ] [ 日光 ] [ 暮光 ] [ 油画 ] */}
+                <div className="tool-section">
+                  <div className="tool-label">
+                    <span>{t(language, "lighting")}</span>
+                    <Sparkles size={13} strokeWidth={1.4} />
+                  </div>
+                  <div className="light-presets-row" role="group" aria-label={t(language, "lighting")}>
+                    {LIGHT_PRESETS.map((preset) => {
+                      const isSelected = lightWarmth === preset.warmth && lightDirection === preset.direction;
+                      return (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          aria-pressed={isSelected}
+                          className={`light-preset-btn ${isSelected ? "active" : ""}`}
+                          onClick={() => {
+                            checkpoint();
+                            setLightWarmth(preset.warmth);
+                            setLightDirection(preset.direction);
+                          }}
+                        >
+                          {t(language, preset.labelKey)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <div className="tool-section">
                   <div className="tool-label">
                     <span>{t(language, "backdrop")}</span>
@@ -3239,76 +3391,6 @@ export default function FlowerStudio() {
                   </div>
                 </div>
 
-                {/* 光影预设 [ 晨光 ] [ 日光 ] [ 暮光 ] [ 油画 ] */}
-                <div className="tool-section">
-                  <div className="tool-label">
-                    <span>{t(language, "lighting")}</span>
-                    <Sparkles size={13} strokeWidth={1.4} />
-                  </div>
-                  <div className="light-presets-row" role="group" aria-label={t(language, "lighting")}>
-                    {LIGHT_PRESETS.map((preset) => {
-                      const isSelected = backdrop === preset.backdrop && lightWarmth === preset.warmth && lightDirection === preset.direction;
-                      return (
-                        <button
-                          key={preset.id}
-                          type="button"
-                          className={`light-preset-btn ${isSelected ? "active" : ""}`}
-                          onClick={() => {
-                            checkpoint();
-                            setBackdrop(preset.backdrop);
-                            setLightWarmth(preset.warmth);
-                            setLightDirection(preset.direction);
-                          }}
-                        >
-                          {t(language, preset.labelKey)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="tool-section">
-                  <label className="light-control" htmlFor="light-warmth">
-                    <span>{t(language, "warmth")}</span>
-                    <output>{lightWarmth === 0 ? t(language, "balanced") : lightWarmth > 0 ? `+${lightWarmth}` : lightWarmth}</output>
-                  </label>
-                  <input
-                    id="light-warmth"
-                    className="range"
-                    type="range"
-                    min="-100"
-                    max="100"
-                    value={lightWarmth}
-                    aria-label={t(language, "warmth")}
-                    onChange={(event) => setLightWarmth(Number(event.target.value))}
-                  />
-                  <div className="light-scale">
-                    <span>{t(language, "cool")}</span>
-                    <span>{t(language, "warm")}</span>
-                  </div>
-                </div>
-
-                <div className="tool-section">
-                  <label className="light-control" htmlFor="light-direction">
-                    <span>{t(language, "direction")}</span>
-                    <output>{lightDirection}°</output>
-                  </label>
-                  <input
-                    id="light-direction"
-                    className="range"
-                    type="range"
-                    min="-180"
-                    max="180"
-                    value={lightDirection}
-                    aria-label={t(language, "direction")}
-                    onChange={(event) => setLightDirection(Number(event.target.value))}
-                  />
-                  <div className="light-scale">
-                    <span>{t(language, "turnLeft")}</span>
-                    <span>{t(language, "turnRight")}</span>
-                  </div>
-                </div>
-
                 {/* 微风（只保留一个开关） */}
                 <div className="tool-section wind-tool-section">
                   <div className="wind-switch-row">
@@ -3331,10 +3413,59 @@ export default function FlowerStudio() {
                     </button>
                   </div>
                 </div>
+                <details className="light-fine-tuning">
+                  <summary>{t(language, "fineTuneLight")}</summary>
+                  <div className="tool-section">
+                    <label className="light-control" htmlFor="light-warmth">
+                      <span>{t(language, "warmth")}</span>
+                      <output>{lightWarmth === 0 ? t(language, "balanced") : lightWarmth > 0 ? `+${lightWarmth}` : lightWarmth}</output>
+                    </label>
+                    <input
+                      id="light-warmth"
+                      className="range"
+                      type="range"
+                      min="-100"
+                      max="100"
+                      value={lightWarmth}
+                      aria-label={t(language, "warmth")}
+                      onPointerDown={checkpoint}
+                      onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) checkpoint(); }}
+                      onChange={(event) => setLightWarmth(Number(event.target.value))}
+                    />
+                    <div className="light-scale">
+                      <span>{t(language, "cool")}</span>
+                      <span>{t(language, "warm")}</span>
+                    </div>
+                  </div>
+
+                  <div className="tool-section">
+                    <label className="light-control" htmlFor="light-direction">
+                      <span>{t(language, "direction")}</span>
+                      <output>{lightDirection}°</output>
+                    </label>
+                    <input
+                      id="light-direction"
+                      className="range"
+                      type="range"
+                      min="-180"
+                      max="180"
+                      value={lightDirection}
+                      aria-label={t(language, "direction")}
+                      onPointerDown={checkpoint}
+                      onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) checkpoint(); }}
+                      onChange={(event) => setLightDirection(Number(event.target.value))}
+                    />
+                    <div className="light-scale">
+                      <span>{t(language, "turnLeft")}</span>
+                      <span>{t(language, "turnRight")}</span>
+                    </div>
+                  </div>
+
+                </details>
               </div>
 
               {/* 2. 花材 */}
-              <div className="drawer-pane" style={{ display: activeDrawer === "flowers" ? "block" : "none" }}>
+              <div className="drawer-pane" style={{ display: selectedStem || (isMobileLayout && toolDrawer === "flowers") ? "block" : "none" }}>
                 {selectedStem ? (
                   <StemAdjustmentControls
                     stem={selectedStem}
@@ -3352,102 +3483,11 @@ export default function FlowerStudio() {
                     onRemove={removeSelected}
                     onDone={() => setSelectedId(null)}
                   />
-                ) : (<>
-                {stems.length > 0 && (
-                  <div className="tool-section stem-adjust-entry">
-                    <button
-                      type="button"
-                      className="adjust-toggle"
-                      aria-expanded={false}
-                      onClick={() => setSelectedId(stems[stems.length - 1].id)}
-                    >
-                      <span>{t(language, "adjust")}</span>
-                      <span>{stems.length}</span>
-                    </button>
-                    <p className="rotation-hint">{t(language, "adjustHint")}</p>
-                  </div>
-                )}
-
-                <div className="category-tabs" role="tablist" aria-label={t(language, "flowers")}>
-                  {(Object.keys(CATEGORY_LABELS) as FlowerCategory[]).map((item) => {
-                    const count = FLOWERS.filter((flower) => flower.category === item && flower.kind !== "blue-poppy").length;
-                    return (
-                      <button
-                        key={item}
-                        type="button"
-                        role="tab"
-                        aria-selected={category === item}
-                        className={category === item ? "category-tab active" : "category-tab"}
-                        onClick={() => setCategory(item)}
-                      >
-                        <span>{categoryName(language, item)}</span>
-                        <small>{count}</small>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="flower-grid">
-                  {FLOWERS.filter((flower) => flower.category === category && flower.kind !== "blue-poppy").map((flower) => (
-                    <button
-                      key={flower.kind}
-                      className={held === flower.kind ? "flower-card is-held" : "flower-card"}
-                      type="button"
-                      aria-pressed={held === flower.kind}
-                      onPointerDown={(event) => {
-                        if (event.button !== 0 || event.pointerType === "touch") return;
-                        suppressClick.current = false;
-                        paletteDrag.current = { x: event.clientX, y: event.clientY, moved: false };
-                        event.currentTarget.setPointerCapture(event.pointerId);
-                      }}
-                      onPointerMove={(event) => {
-                        if (event.pointerType === "touch") return;
-                        const active = paletteDrag.current;
-                        if (!active || !event.currentTarget.hasPointerCapture(event.pointerId)) return;
-                        if (!active.moved && Math.hypot(event.clientX - active.x, event.clientY - active.y) < 7) return;
-                        active.moved = true;
-                        setHeld(flower.kind);
-                        setSelectedId(null);
-                        projectPointerRef.current?.(event.clientX, event.clientY);
-                      }}
-                      onPointerUp={(event) => {
-                        const active = paletteDrag.current;
-                        paletteDrag.current = null;
-                        if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-                        if (!active?.moved) return;
-                        suppressClick.current = true;
-                        const target = document.elementFromPoint(event.clientX, event.clientY);
-                        if (target?.closest(".canvas-wrap")) {
-                          const point = projectPointerRef.current?.(event.clientX, event.clientY);
-                          if (point) placeFlower(point, flower.kind);
-                        } else setHeld(null);
-                      }}
-                      onPointerCancel={() => { paletteDrag.current = null; setHeld(null); }}
-                      onClick={() => {
-                        if (suppressClick.current) { suppressClick.current = false; return; }
-                        placeFlower(autoPlacementPoint(flower.kind, stems, vessel, vesselScale), flower.kind);
-                      }}
-                    >
-                      <FlowerThumbnail kind={flower.kind} />
-                      <span className="flower-card-plus" aria-hidden="true">+</span>
-                      <strong>{flowerName(language, flower.kind)}</strong>
-                      <small>{flower.latin}</small>
-                      {stems.some((stem) => stem.kind === flower.kind) ? (
-                        <span className="added-indicator">{t(language, "added")} · {stems.filter((stem) => stem.kind === flower.kind).length}</span>
-                      ) : null}
-                      {flower.availability !== "available" ? (
-                        <span className={`availability ${flower.availability}`}>
-                          {flower.availability === "play" ? t(language, "studioOnly") : t(language, "preorder")}
-                        </span>
-                      ) : null}
-                    </button>
-                  ))}
-                </div>
-                </>)}
+                ) : isMobileLayout ? flowerLibrary : null}
               </div>
 
               {/* 3. 容器 */}
-              <div className="drawer-pane" style={{ display: activeDrawer === "vessels" ? "block" : "none" }}>
+              <div className="drawer-pane" style={{ display: !selectedStem && toolDrawer === "vessels" ? "block" : "none" }}>
                 <div className="vessel-tabs" role="tablist" aria-label={t(language, "containers")}>
                   <button type="button" role="tab" aria-selected={vesselCategory === "vase"} className={vesselCategory === "vase" ? "vessel-tab active" : "vessel-tab"} onClick={() => setVesselCategory("vase")}>{t(language, "vase")}</button>
                   <button type="button" role="tab" aria-selected={vesselCategory === "bouquet"} className={vesselCategory === "bouquet" ? "vessel-tab active" : "vessel-tab"} onClick={() => setVesselCategory("bouquet")}>{t(language, "bouquets")}</button>
@@ -3571,7 +3611,7 @@ export default function FlowerStudio() {
               </div>
 
               {/* 4. 环境音 */}
-              <div className="drawer-pane" style={{ display: activeDrawer === "sound" ? "block" : "none" }}>
+              <div className="drawer-pane" style={{ display: !selectedStem && toolDrawer === "sound" ? "block" : "none" }}>
                 <AmbientSoundPanel language={language} />
               </div>
             </div>
