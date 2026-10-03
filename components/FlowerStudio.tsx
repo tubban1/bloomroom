@@ -2027,6 +2027,14 @@ export default function FlowerStudio() {
     () => computeBouquetFingerprint(bouquetDataObj),
     [bouquetDataObj],
   );
+
+  const handleReadingChange = useCallback((r: AiReading | null) => {
+    setCurrentAiReading((prev) => {
+      if (!prev && !r) return null;
+      if (prev?.fingerprint === r?.fingerprint && prev?.language === r?.language) return prev;
+      return r;
+    });
+  }, []);
   const postcardImage = postcardRender?.source === finishImage
     && postcardRender.to === recipient.trim()
     && postcardRender.message === giftMessage.trim()
@@ -3318,7 +3326,7 @@ export default function FlowerStudio() {
                 bouquetData={bouquetDataObj}
                 bouquetImage={finishImage}
                 currentFingerprint={currentBouquetFingerprint}
-                onReadingChange={(r) => setCurrentAiReading(r)}
+                onReadingChange={handleReadingChange}
               />
 
               <div className="gift-fields">

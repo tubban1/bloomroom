@@ -29,6 +29,11 @@ export default function AiReadingCard({
   const [savingCard, setSavingCard] = useState(false);
   const [mobileModalImage, setMobileModalImage] = useState<string | null>(null);
 
+  const onReadingChangeRef = useRef(onReadingChange);
+  useEffect(() => {
+    onReadingChangeRef.current = onReadingChange;
+  }, [onReadingChange]);
+
   // Load from local storage when fingerprint or language changes
   useEffect(() => {
     try {
@@ -38,7 +43,7 @@ export default function AiReadingCard({
         const exactKey = `${currentFingerprint}:${language}`;
         if (parsed[exactKey]) {
           setReading(parsed[exactKey]);
-          onReadingChange?.(parsed[exactKey]);
+          onReadingChangeRef.current?.(parsed[exactKey]);
           setError(null);
           return;
         }
@@ -48,7 +53,7 @@ export default function AiReadingCard({
         if (keys.length > 0) {
           const latestKey = keys[keys.length - 1];
           setReading(parsed[latestKey]);
-          onReadingChange?.(parsed[latestKey]);
+          onReadingChangeRef.current?.(parsed[latestKey]);
           return;
         }
       }
@@ -56,7 +61,8 @@ export default function AiReadingCard({
       // Storage error ignored
     }
     setReading(null);
-  }, [currentFingerprint, language, onReadingChange]);
+    onReadingChangeRef.current?.(null);
+  }, [currentFingerprint, language]);
 
   const saveReadingToStorage = (newReading: AiReading) => {
     try {
