@@ -1640,7 +1640,8 @@ function StudioScene({
   );
   const lightAngle = lightDirection * Math.PI / 180;
   const sideLight = Math.abs(Math.sin(lightAngle));
-  const lightHeight = Math.max(2.2, 7.4 - Math.max(0, lightWarmth) / 100 * 8);
+  // Color temperature changes color only; keep the light position and shadow geometry fixed.
+  const lightHeight = 7.4;
 
 
   const handleMove = (event: ThreeEvent<PointerEvent>) => {
