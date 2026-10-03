@@ -128,23 +128,28 @@ export async function POST(request: Request) {
           const imagePath = `images/${id}.${validatedImage.ext}`;
           await uploadStorageObject(BUCKET_IMAGES, imagePath, imageBuffer, validatedImage.mime);
           uploadedImagePath = imagePath;
+        } catch (imageErr) {
+          console.warn("Storage image upload failed, falling back to base64 in database:", imageErr);
+          // Graceful fallback: image will be stored as base64 in database so user never sees a failure
+          uploadedImagePath = null;
+        }
 
-          if (audioBuffer && validatedAudio) {
+        if (audioBuffer && validatedAudio) {
+          try {
             const audioPath = `audio/${id}.${validatedAudio.ext}`;
             await uploadStorageObject(BUCKET_AUDIO, audioPath, audioBuffer, validatedAudio.mime);
             uploadedAudioPath = audioPath;
+          } catch (audioErr) {
+            console.error("Storage audio upload failed:", audioErr);
+            if (uploadedImagePath) await deleteStorageObject(BUCKET_IMAGES, uploadedImagePath);
+            return Response.json(
+              { error: "Could not upload voice recording to storage. Please try again or remove voice greeting to send." },
+              { status: 503 },
+            );
           }
-        } catch (uploadError) {
-          console.error("Storage upload failed, rolling back uploaded files", uploadError);
-          if (uploadedImagePath) await deleteStorageObject(BUCKET_IMAGES, uploadedImagePath);
-          if (uploadedAudioPath) await deleteStorageObject(BUCKET_AUDIO, uploadedAudioPath);
-          return Response.json(
-            { error: "Could not save postcard files to storage. Please try again." },
-            { status: 503 },
-          );
         }
       } else {
-        // If storage is not yet configured, audio requires storage
+        // If storage is not configured, audio requires storage
         if (audioBuffer) {
           return Response.json(
             {

@@ -15,7 +15,9 @@ export function getSupabaseUrl(): string {
 }
 
 export function getServiceRoleKey(): string | null {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || null;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || null;
+  if (!key || key.trim() === "") return null;
+  return key.trim();
 }
 
 export function isStorageConfigured(): boolean {
@@ -23,8 +25,41 @@ export function isStorageConfigured(): boolean {
 }
 
 /**
+ * Automatically create a bucket if it does not exist.
+ */
+export async function createBucketIfNotExists(bucket: string): Promise<boolean> {
+  const serviceKey = getServiceRoleKey();
+  if (!serviceKey) return false;
+
+  const supabaseUrl = getSupabaseUrl();
+  const url = `${supabaseUrl}/storage/v1/bucket`;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${serviceKey}`,
+        apikey: serviceKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id: bucket,
+        name: bucket,
+        public: bucket === BUCKET_IMAGES,
+        file_size_limit: bucket === BUCKET_AUDIO ? 2097152 : 5242880,
+      }),
+    });
+    return response.ok || response.status === 409;
+  } catch (err) {
+    console.warn(`Could not auto-create bucket ${bucket}:`, err);
+    return false;
+  }
+}
+
+/**
  * Upload an object to a Supabase Storage bucket.
  * Uses upsert: false to forbid overwriting existing files.
+ * Automatically tries to create bucket and retries if bucket was missing.
  */
 export async function uploadStorageObject(
   bucket: string,
@@ -53,6 +88,25 @@ export async function uploadStorageObject(
 
   if (!response.ok) {
     const errorText = await response.text();
+    // If bucket does not exist, auto-create bucket and retry once
+    if (response.status === 404 || errorText.toLowerCase().includes("bucket not found")) {
+      const created = await createBucketIfNotExists(bucket);
+      if (created) {
+        const retryRes = await fetch(url, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${serviceKey}`,
+            apikey: serviceKey,
+            "Content-Type": mimeType,
+            "x-upsert": "false",
+          },
+          body: new Uint8Array(buffer),
+        });
+        if (retryRes.ok) {
+          return { path };
+        }
+      }
+    }
     throw new Error(`Storage upload failed (${response.status}): ${errorText}`);
   }
 
