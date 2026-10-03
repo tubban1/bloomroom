@@ -132,12 +132,11 @@ export const LIGHT_PRESETS: {
   labelKey: "morningLight" | "daylight" | "twilight" | "oilPainting";
   warmth: number;
   direction: number;
-  backdrop: BackdropKind;
 }[] = [
-  { id: "morning", labelKey: "morningLight", warmth: -15, direction: -45, backdrop: "linen" },
-  { id: "daylight", labelKey: "daylight", warmth: 0, direction: -15, backdrop: "limestone" },
-  { id: "twilight", labelKey: "twilight", warmth: 45, direction: 60, backdrop: "linen" },
-  { id: "oil", labelKey: "oilPainting", warmth: 30, direction: -50, backdrop: "charcoal" },
+  { id: "morning", labelKey: "morningLight", warmth: -15, direction: -45 },
+  { id: "daylight", labelKey: "daylight", warmth: 0, direction: -15 },
+  { id: "twilight", labelKey: "twilight", warmth: 45, direction: 60 },
+  { id: "oil", labelKey: "oilPainting", warmth: 30, direction: -50 },
 ];
 
 export function getRandomLightPreset() {
@@ -2077,7 +2076,7 @@ export default function FlowerStudio() {
   const [initialLightPreset] = useState(getRandomLightPreset);
   const [lightWarmth, setLightWarmth] = useState(initialLightPreset.warmth);
   const [lightDirection, setLightDirection] = useState(initialLightPreset.direction);
-  const [backdrop, setBackdrop] = useState<BackdropKind>(initialLightPreset.backdrop);
+  const [backdrop, setBackdrop] = useState<BackdropKind>(getRandomBackdrop);
   const [category, setCategory] = useState<FlowerCategory>("main");
   const [wind, setWind] = useState(0);
   const [bouquetRotation, setBouquetRotation] = useState<BouquetRotation>({ ...DEFAULT_BOUQUET_ROTATION });
@@ -2767,8 +2766,8 @@ export default function FlowerStudio() {
     setVesselOpacity(100);
     setVesselScale(getRandomVesselScale());
     setBouquetRotation({ ...DEFAULT_BOUQUET_ROTATION });
+    setBackdrop(getRandomBackdrop());
     const nextLightPreset = getRandomLightPreset();
-    setBackdrop(nextLightPreset.backdrop);
     setLightWarmth(nextLightPreset.warmth);
     setLightDirection(nextLightPreset.direction);
     setWind(0);
@@ -3358,7 +3357,7 @@ export default function FlowerStudio() {
                   </div>
                   <div className="light-presets-row" role="group" aria-label={t(language, "lighting")}>
                     {LIGHT_PRESETS.map((preset) => {
-                      const isSelected = lightWarmth === preset.warmth && lightDirection === preset.direction && backdrop === preset.backdrop;
+                      const isSelected = lightWarmth === preset.warmth && lightDirection === preset.direction;
                       return (
                         <button
                           key={preset.id}
@@ -3369,7 +3368,6 @@ export default function FlowerStudio() {
                             checkpoint();
                             setLightWarmth(preset.warmth);
                             setLightDirection(preset.direction);
-                            setBackdrop(preset.backdrop);
                           }}
                         >
                           {t(language, preset.labelKey)}
