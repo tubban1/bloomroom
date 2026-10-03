@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { X, Sparkles, Send, Trash2, Edit3, ArrowRight, ExternalLink, Flower2, Heart } from "lucide-react";
 import type { DraftSummary, SentPostcardSummary } from "@/lib/drafts";
 import type { SafeUser } from "@/lib/auth";
@@ -45,6 +45,19 @@ export default function GardenModal({
   const [editTitle, setEditTitle] = useState("");
   const [editingCreationId, setEditingCreationId] = useState<string | null>(null);
   const [editCreationTitle, setEditCreationTitle] = useState("");
+
+  const gardenMouseDownRef = useRef<EventTarget | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
   const fetchLibrary = async () => {
     if (!user) return;
@@ -215,7 +228,19 @@ export default function GardenModal({
   };
 
   return (
-    <div className="garden-overlay" onClick={onClose} role="dialog" aria-modal="true">
+    <div
+      className="garden-overlay"
+      role="dialog"
+      aria-modal="true"
+      onMouseDown={(e) => {
+        gardenMouseDownRef.current = e.target;
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && gardenMouseDownRef.current === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
       <div className="garden-modal" onClick={(e) => e.stopPropagation()}>
         <header className="garden-header">
           <div className="garden-header-title">

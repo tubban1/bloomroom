@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   X,
   Heart,
@@ -47,6 +47,9 @@ export default function GalleryModal({
   const [detail, setDetail] = useState<CreationDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
+  const overlayMouseDownRef = useRef<EventTarget | null>(null);
+  const detailMouseDownRef = useRef<EventTarget | null>(null);
+
   const fetchItems = useCallback(async (newSort: GallerySort, newOffset: number, append = false) => {
     if (append) setLoadingMore(true);
     else setLoading(true);
@@ -88,6 +91,21 @@ export default function GalleryModal({
       fetchItems(sort, 0, false);
     }
   }, [isOpen, sort, fetchItems]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (selectedItem) {
+          handleCloseDetail();
+        } else {
+          onClose();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, selectedItem, onClose]);
 
   const handleSortChange = (newSort: GallerySort) => {
     if (newSort === sort) return;
@@ -202,8 +220,21 @@ export default function GalleryModal({
   if (!isOpen) return null;
 
   return (
-    <div className="gallery-modal-overlay" role="dialog" aria-modal="true" aria-label={t(language, "galleryTitle")}>
-      <div className="gallery-modal-container">
+    <div
+      className="gallery-modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label={t(language, "galleryTitle")}
+      onMouseDown={(e) => {
+        overlayMouseDownRef.current = e.target;
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && overlayMouseDownRef.current === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="gallery-modal-container" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <header className="gallery-header">
           <div className="gallery-header-left">
@@ -341,8 +372,16 @@ export default function GalleryModal({
             role="dialog"
             aria-modal="true"
             aria-label={t(language, "galleryTitle")}
+            onMouseDown={(e) => {
+              detailMouseDownRef.current = e.target;
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget && detailMouseDownRef.current === e.currentTarget) {
+                handleCloseDetail();
+              }
+            }}
           >
-            <div className="gallery-detail-card">
+            <div className="gallery-detail-card" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
                 className="gallery-detail-close"

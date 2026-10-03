@@ -86,6 +86,18 @@ export default function AuthModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const modalRef = useRef<HTMLDivElement>(null);
+  const authMouseDownRef = useRef<EventTarget | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        closeModal();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -150,7 +162,17 @@ export default function AuthModal({
   };
 
   return (
-    <div className="auth-overlay" onClick={closeModal}>
+    <div
+      className="auth-overlay"
+      onMouseDown={(e) => {
+        authMouseDownRef.current = e.target;
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && authMouseDownRef.current === e.currentTarget) {
+          closeModal();
+        }
+      }}
+    >
       <div
         ref={modalRef}
         className="auth-modal"

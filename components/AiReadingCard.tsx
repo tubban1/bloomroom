@@ -29,6 +29,18 @@ export default function AiReadingCard({
   const [copied, setCopied] = useState(false);
   const [savingCard, setSavingCard] = useState(false);
   const [mobileModalImage, setMobileModalImage] = useState<string | null>(null);
+  const mobileModalMouseDownRef = useRef<EventTarget | null>(null);
+
+  useEffect(() => {
+    if (!mobileModalImage) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMobileModalImage(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [mobileModalImage]);
 
   const onReadingChangeRef = useRef(onReadingChange);
   useEffect(() => {
@@ -484,6 +496,14 @@ export default function AiReadingCard({
           role="dialog"
           aria-modal="true"
           aria-label={t(language, "saveToPhotos")}
+          onMouseDown={(e) => {
+            mobileModalMouseDownRef.current = e.target;
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget && mobileModalMouseDownRef.current === e.currentTarget) {
+              setMobileModalImage(null);
+            }
+          }}
         >
           <button
             type="button"
@@ -494,7 +514,11 @@ export default function AiReadingCard({
           </button>
           <p>{t(language, "longPressToSave")}</p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={mobileModalImage} alt={reading?.title || "Reading card"} />
+          <img
+            src={mobileModalImage}
+            alt={reading?.title || "Reading card"}
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>

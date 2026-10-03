@@ -2024,6 +2024,8 @@ export default function FlowerStudio() {
   const creationSaveCount = useRef(0);
   const visibilityRevision = useRef(0);
   const finishedCreation = useRef<{ key: string; form: FormData } | null>(null);
+  const finishOverlayMouseDownRef = useRef<EventTarget | null>(null);
+  const mobilePostcardMouseDownRef = useRef<EventTarget | null>(null);
 
   const bouquetDataObj = useMemo(
     () =>
@@ -3422,8 +3424,20 @@ export default function FlowerStudio() {
       </section>
 
       {finishOpen ? (
-        <div className="finish-overlay" role="dialog" aria-modal="true">
-          <div className="finish-card">
+        <div
+          className="finish-overlay"
+          role="dialog"
+          aria-modal="true"
+          onMouseDown={(e) => {
+            finishOverlayMouseDownRef.current = e.target;
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget && finishOverlayMouseDownRef.current === e.currentTarget) {
+              closeFinish();
+            }
+          }}
+        >
+          <div className="finish-card" onClick={(e) => e.stopPropagation()}>
             <div
               className="finish-preview"
               style={
@@ -3564,12 +3578,25 @@ export default function FlowerStudio() {
             <X size={18} strokeWidth={1.5} />
           </button>
           {mobilePostcardOpen && postcardImage && (
-            <div className="mobile-postcard-view" role="dialog" aria-modal="true" aria-label={t(language, "saveToPhotos")}>
+            <div
+              className="mobile-postcard-view"
+              role="dialog"
+              aria-modal="true"
+              aria-label={t(language, "saveToPhotos")}
+              onMouseDown={(e) => {
+                mobilePostcardMouseDownRef.current = e.target;
+              }}
+              onClick={(e) => {
+                if (e.target === e.currentTarget && mobilePostcardMouseDownRef.current === e.currentTarget) {
+                  setMobilePostcardOpen(false);
+                }
+              }}
+            >
               <button type="button" onClick={() => setMobilePostcardOpen(false)} aria-label={t(language, "back")}>×</button>
               <p>{t(language, "longPressToSave")}</p>
               {/* Native image context menus expose Save Image on mobile browsers without file sharing. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={postcardImage} alt={t(language, "postcardTitle")} />
+              <img src={postcardImage} alt={t(language, "postcardTitle")} onClick={(e) => e.stopPropagation()} />
             </div>
           )}
         </div>
