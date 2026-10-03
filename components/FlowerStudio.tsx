@@ -650,6 +650,24 @@ function getVesselColors(kind: VesselKind) {
   return kind === "paper" || kind === "canvas" ? VESSEL_COLORS.wrap : VESSEL_COLORS.ceramic;
 }
 
+const INITIAL_VESSEL_KINDS: VesselKind[] = [
+  "classic",
+  "bud",
+  "bowl",
+  "footed",
+  "mug",
+  "paper",
+  "canvas",
+];
+
+function getRandomVessel(): VesselKind {
+  return INITIAL_VESSEL_KINDS[Math.floor(Math.random() * INITIAL_VESSEL_KINDS.length)];
+}
+
+function getRandomBackdrop(): BackdropKind {
+  return BACKDROP_OPTIONS[Math.floor(Math.random() * BACKDROP_OPTIONS.length)].id;
+}
+
 const VASE_PROFILES: Record<Exclude<VesselKind, "paper" | "canvas" | "naked">, [number, number][]> = {
   classic: [[0.46, 0], [0.53, 0.08], [0.61, 0.34], [0.65, 0.72], [0.61, 1.04], [0.49, 1.34], [0.45, 1.42]],
   bud: [[0.34, 0], [0.39, 0.08], [0.45, 0.42], [0.3, 0.72], [0.22, 1.04], [0.23, 1.35], [0.3, 1.42]],
@@ -1974,19 +1992,22 @@ export default function FlowerStudio() {
   const modelsLoading = useProgress((state) => state.active);
   const [language, setLanguage] = useState<Language>(getInitialLanguage);
   const [stems, setStems] = useState<Stem[]>([]);
-  const [vessel, setVessel] = useState<VesselKind>("classic");
-  const [vesselColor, setVesselColor] = useState(getDefaultVesselColor("classic"));
+  const [initialVessel] = useState<VesselKind>(getRandomVessel);
+  const [vessel, setVessel] = useState<VesselKind>(initialVessel);
+  const [vesselColor, setVesselColor] = useState<string>(() => getDefaultVesselColor(initialVessel));
   const [vesselOpacity, setVesselOpacity] = useState(100);
   const [vesselScale, setVesselScale] = useState(1);
   const [vesselAdjustOpen, setVesselAdjustOpen] = useState(false);
   const [libraryMode, setLibraryMode] = useState<LibraryMode>("flowers");
-  const [vesselCategory, setVesselCategory] = useState<"vase" | "bouquet" | "imagination">("vase");
+  const [vesselCategory, setVesselCategory] = useState<"vase" | "bouquet" | "imagination">(() => (
+    VESSEL_OPTIONS.find((option) => option.kind === initialVessel)?.category ?? "vase"
+  ));
   const [held, setHeld] = useState<FlowerKind | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [lightWarmth, setLightWarmth] = useState(0);
   const [lightDirection, setLightDirection] = useState(DEFAULT_LIGHT_DIRECTION);
-  const [backdrop, setBackdrop] = useState<BackdropKind>("linen");
+  const [backdrop, setBackdrop] = useState<BackdropKind>(getRandomBackdrop);
   const [category, setCategory] = useState<FlowerCategory>("main");
   const [wind, setWind] = useState(0.32);
   const [bouquetRotation, setBouquetRotation] = useState<BouquetRotation>({ ...DEFAULT_BOUQUET_ROTATION });
@@ -2658,12 +2679,15 @@ export default function FlowerStudio() {
   const startOver = () => {
     checkpoint();
     setStems([]);
-    setVessel("classic");
-    setVesselColor(getDefaultVesselColor("classic"));
+    const nextVessel = getRandomVessel();
+    const nextCategory = VESSEL_OPTIONS.find((opt) => opt.kind === nextVessel)?.category ?? "vase";
+    setVessel(nextVessel);
+    setVesselColor(getDefaultVesselColor(nextVessel));
+    setVesselCategory(nextCategory);
     setVesselOpacity(100);
     setVesselScale(1);
     setBouquetRotation({ ...DEFAULT_BOUQUET_ROTATION });
-    setBackdrop("linen");
+    setBackdrop(getRandomBackdrop());
     setLightWarmth(0);
     setLightDirection(DEFAULT_LIGHT_DIRECTION);
     setHeld(null);
