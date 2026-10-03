@@ -521,6 +521,66 @@ button {
   gap: 5px;
 }
 
+.backdrop-control {
+  margin: 6px 0 10px;
+}
+
+.backdrop-selector {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.backdrop-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 4px 6px;
+  border: 1px solid #dcd7cb;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.45);
+  color: var(--ink);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  touch-action: manipulation;
+  box-sizing: border-box;
+}
+
+.backdrop-pill:hover {
+  background: rgba(255, 255, 255, 0.75);
+  border-color: #beb7a7;
+}
+
+.backdrop-pill[aria-checked="true"] {
+  background: #ffffff;
+  border-color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  font-weight: 500;
+}
+
+.backdrop-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  flex-shrink: 0;
+}
+
+.backdrop-pill[aria-checked="true"] .backdrop-swatch {
+  box-shadow: 0 0 0 1.5px #ffffff, 0 0 0 3px var(--ink);
+}
+
+.backdrop-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .light-adjustments {
   margin-top: 0;
   padding-top: 0;

@@ -33,7 +33,7 @@ import { minimumStemHeight } from "../lib/stem-geometry";
 import { createNaturalStemCurve, naturalStemRadius, stemAxisRotation, stemAxisTip } from "../lib/stem-shape";
 import { ImportedFlower, ImportedStem, IMPORTED_STEMS, flowerHeadHeight, flowerHeadWidth } from "./ImportedFlower";
 import { AmbientSoundPanel } from "./AmbientSound";
-import { LANGUAGES, categoryName, colorName, flowerName, presetName, presetNote, t, vesselName, vesselNote, type Language } from "../lib/translations";
+import { LANGUAGES, backdropName, categoryName, colorName, flowerName, presetName, presetNote, t, vesselName, vesselNote, type Language } from "../lib/translations";
 
 type Availability = "available" | "preorder" | "play";
 type FlowerCategory = "main" | "filler" | "foliage";
@@ -102,6 +102,48 @@ type Stem = {
 };
 
 type BouquetRotation = { x: number; y: number; z: number };
+
+export type BackdropKind = "linen" | "limestone" | "charcoal" | "forest";
+
+export const BACKDROP_CONFIG: Record<BackdropKind, {
+  color: string;
+  wall: string;
+  fog: string;
+  fill: string;
+}> = {
+  linen: {
+    color: "#EEE9DD",
+    wall: "#EEE9DD",
+    fog: "#EEE9DD",
+    fill: "#D9E0D2",
+  },
+  limestone: {
+    color: "#D6DAD7",
+    wall: "#D6DAD7",
+    fog: "#D6DAD7",
+    fill: "#CFD6D3",
+  },
+  charcoal: {
+    color: "#30322F",
+    wall: "#30322F",
+    fog: "#30322F",
+    fill: "#C8CCC5",
+  },
+  forest: {
+    color: "#344039",
+    wall: "#344039",
+    fog: "#344039",
+    fill: "#C8CCC5",
+  },
+};
+
+export const BACKDROP_OPTIONS: { id: BackdropKind; color: string }[] = [
+  { id: "linen", color: "#EEE9DD" },
+  { id: "limestone", color: "#D6DAD7" },
+  { id: "charcoal", color: "#30322F" },
+  { id: "forest", color: "#344039" },
+];
+
 type StudioSnapshot = {
   stems: Stem[];
   rotation: BouquetRotation;
@@ -109,6 +151,9 @@ type StudioSnapshot = {
   vesselColor: string;
   vesselOpacity: number;
   vesselScale: number;
+  backdrop: BackdropKind;
+  lightWarmth: number;
+  lightDirection: number;
 };
 
 const DEFAULT_BOUQUET_ROTATION: BouquetRotation = { x: 0, y: 0, z: 0 };
@@ -1283,6 +1328,7 @@ function StudioScene({
   vesselOpacity,
   vesselScale,
   bouquetRotation,
+  backdrop,
   held,
   selectedId,
   dragId,
@@ -1305,6 +1351,7 @@ function StudioScene({
   vesselOpacity: number;
   vesselScale: number;
   bouquetRotation: BouquetRotation;
+  backdrop: BackdropKind;
   held: FlowerKind | null;
   selectedId: string | null;
   dragId: string | null;
@@ -1327,6 +1374,10 @@ function StudioScene({
   );
 
   const { camera, gl, scene } = useThree();
+  const backdropConfig = BACKDROP_CONFIG[backdrop] ?? BACKDROP_CONFIG.linen;
+  useEffect(() => {
+    scene.background = new THREE.Color(backdropConfig.color);
+  }, [scene, backdropConfig.color]);
   useEffect(() => {
     captureSceneRef.current = () => {
       gl.render(scene, camera);
@@ -1463,7 +1514,7 @@ function StudioScene({
     };
   }, [camera, gl, onDrag, onDragEnd, pointToStudioSpace, setCanvasCursor]);
 
-  const sceneColors = { fog: "#eee9dd", wall: "#eee9dd", key: "#fff4db", fill: "#d9e0d2" };
+  const sceneColors = { fog: backdropConfig.fog, wall: backdropConfig.wall, key: "#fff4db", fill: backdropConfig.fill };
   const keyColor = new THREE.Color(sceneColors.key).lerp(
     new THREE.Color(lightWarmth < 0 ? "#c6e1ff" : "#ffba79"),
     Math.abs(lightWarmth) / 100 * 0.8,
@@ -1578,16 +1629,46 @@ function StudioScene({
   );
 }
 
-function encodeBouquet(stems: Stem[], rotation: BouquetRotation, vessel: VesselKind, vesselColor: string, vesselOpacity: number, vesselScale: number) {
+function encodeBouquet(
+  stems: Stem[],
+  rotation: BouquetRotation,
+  vessel: VesselKind,
+  vesselColor: string,
+  vesselOpacity: number,
+  vesselScale: number,
+  backdrop: BackdropKind = "linen",
+  lightWarmth: number = 0,
+  lightDirection: number = DEFAULT_LIGHT_DIRECTION,
+) {
   const compact = stems.map(({ kind, x, z, height, leanX, leanZ, seed, colorVariant, visualScale }) => ({ kind, x, z, height, leanX, leanZ, seed, colorVariant, visualScale }));
-  const raw = encodeURIComponent(JSON.stringify({ stems: compact, rotation, vessel, vesselColor, vesselOpacity, vesselScale }));
+  const raw = encodeURIComponent(JSON.stringify({
+    stems: compact,
+    rotation,
+    vessel,
+    vesselColor,
+    vesselOpacity,
+    vesselScale,
+    backdrop,
+    lightWarmth,
+    lightDirection,
+  }));
   return btoa(raw)
     .replaceAll("+", "-")
     .replaceAll("/", "_")
     .replaceAll("=", "");
 }
 
-function decodeBouquet(value: string): { stems: Stem[]; rotation: BouquetRotation; vessel: VesselKind; vesselColor: string; vesselOpacity: number; vesselScale: number } | null {
+function decodeBouquet(value: string): {
+  stems: Stem[];
+  rotation: BouquetRotation;
+  vessel: VesselKind;
+  vesselColor: string;
+  vesselOpacity: number;
+  vesselScale: number;
+  backdrop: BackdropKind;
+  lightWarmth: number;
+  lightDirection: number;
+} | null {
   try {
     let normalized = value
       .replaceAll("-", "+")
@@ -1597,7 +1678,17 @@ function decodeBouquet(value: string): { stems: Stem[]; rotation: BouquetRotatio
     const parsed = JSON.parse(decoded) as unknown;
     const shared = Array.isArray(parsed)
       ? { stems: parsed, rotation: DEFAULT_BOUQUET_ROTATION, vessel: "classic" as VesselKind }
-      : parsed as { stems?: unknown; rotation?: Partial<BouquetRotation>; vessel?: unknown; vesselColor?: unknown; vesselOpacity?: unknown; vesselScale?: unknown } | null;
+      : parsed as {
+          stems?: unknown;
+          rotation?: Partial<BouquetRotation>;
+          vessel?: unknown;
+          vesselColor?: unknown;
+          vesselOpacity?: unknown;
+          vesselScale?: unknown;
+          backdrop?: unknown;
+          lightWarmth?: unknown;
+          lightDirection?: unknown;
+        } | null;
     const parsedStems = shared && "stems" in shared ? shared.stems : null;
     const rotation = shared && "rotation" in shared && shared.rotation
       ? shared.rotation
@@ -1611,6 +1702,15 @@ function decodeBouquet(value: string): { stems: Stem[]; rotation: BouquetRotatio
     const vesselOpacity = shared && typeof shared.vesselOpacity === "number" && Number.isFinite(shared.vesselOpacity)
       ? clamp(shared.vesselOpacity, 0, 100)
       : 100;
+    const backdrop = shared && typeof shared.backdrop === "string" && BACKDROP_OPTIONS.some((option) => option.id === shared.backdrop)
+      ? (shared.backdrop as BackdropKind)
+      : "linen";
+    const lightWarmth = shared && typeof shared.lightWarmth === "number" && Number.isFinite(shared.lightWarmth)
+      ? clamp(shared.lightWarmth, -100, 100)
+      : 0;
+    const lightDirection = shared && typeof shared.lightDirection === "number" && Number.isFinite(shared.lightDirection)
+      ? clamp(shared.lightDirection, -180, 180)
+      : DEFAULT_LIGHT_DIRECTION;
     if (!Array.isArray(parsedStems)
       || ![rotation.x, rotation.y, rotation.z].every((value) => typeof value === "number" && Number.isFinite(value))
       || parsedStems.some((stem) => !stem || !FLOWERS.some((flower) => flower.kind === stem.kind)
@@ -1634,6 +1734,9 @@ function decodeBouquet(value: string): { stems: Stem[]; rotation: BouquetRotatio
       vesselColor,
       vesselOpacity,
       vesselScale: shared && typeof shared.vesselScale === "number" && Number.isFinite(shared.vesselScale) ? clamp(shared.vesselScale, 0.7, 1.3) : 1,
+      backdrop,
+      lightWarmth,
+      lightDirection,
     };
   } catch {
     return null;
@@ -1642,7 +1745,7 @@ function decodeBouquet(value: string): { stems: Stem[]; rotation: BouquetRotatio
 
 const POSTCARD_SITE_URL = "https://flower.fde.fan";
 
-async function drawPostcard(imageUrl: string, to: string, message: string, from: string, defaultMessage: string) {
+async function drawPostcard(imageUrl: string, to: string, message: string, from: string, defaultMessage: string, backdropColor: string = "#EEE9DD") {
   const photo = new Image();
   photo.src = imageUrl;
   await photo.decode();
@@ -1653,12 +1756,15 @@ async function drawPostcard(imageUrl: string, to: string, message: string, from:
   if (!context) throw new Error("Could not draw the postcard");
   context.fillStyle = "#f9f7f0";
   context.fillRect(0, 0, card.width, card.height);
-  context.fillStyle = "#e9e4d9";
+  context.fillStyle = backdropColor;
   context.fillRect(42, 42, 916, 930);
   const scale = Math.min(916 / photo.width, 930 / photo.height);
   const width = photo.width * scale;
   const height = photo.height * scale;
   context.drawImage(photo, 42 + (916 - width) / 2, 42 + (930 - height) / 2, width, height);
+  context.strokeStyle = "rgba(0, 0, 0, 0.08)";
+  context.lineWidth = 1;
+  context.strokeRect(41.5, 41.5, 917, 931);
   context.fillStyle = "#817d72";
   context.font = "18px Arial, sans-serif";
   context.fillText("BLOOMROOM  ·  A GIFT OF FLOWERS", 72, 1022);
@@ -1723,6 +1829,7 @@ export default function FlowerStudio() {
   const [dragId, setDragId] = useState<string | null>(null);
   const [lightWarmth, setLightWarmth] = useState(0);
   const [lightDirection, setLightDirection] = useState(DEFAULT_LIGHT_DIRECTION);
+  const [backdrop, setBackdrop] = useState<BackdropKind>("linen");
   const [category, setCategory] = useState<FlowerCategory>("main");
   const [wind, setWind] = useState(0.32);
   const [bouquetRotation, setBouquetRotation] = useState<BouquetRotation>({ ...DEFAULT_BOUQUET_ROTATION });
@@ -1767,42 +1874,49 @@ export default function FlowerStudio() {
     const to = recipient.trim();
     const message = giftMessage.trim();
     const from = sender.trim();
-    drawPostcard(finishImage, to, message, from, t(language, "defaultMessage"))
+    const backdropColor = BACKDROP_CONFIG[backdrop]?.color ?? "#EEE9DD";
+    drawPostcard(finishImage, to, message, from, t(language, "defaultMessage"), backdropColor)
       .then((image) => { if (!cancelled) setPostcardRender({ source: finishImage, to, message, from, image }); })
       .catch(() => { if (!cancelled) setToast(t(language, "drawError")); });
     return () => { cancelled = true; };
-  }, [finishOpen, finishImage, recipient, giftMessage, sender, language]);
+  }, [finishOpen, finishImage, recipient, giftMessage, sender, language, backdrop]);
   const changeLanguage = (next: Language) => {
     setLanguage(next);
     window.localStorage.setItem("bloomroom-language", next);
   };
   const checkpoint = useCallback(() => {
-    past.current = [...past.current.slice(-39), { stems, rotation: bouquetRotation, vessel, vesselColor, vesselOpacity, vesselScale }];
+    past.current = [...past.current.slice(-39), { stems, rotation: bouquetRotation, vessel, vesselColor, vesselOpacity, vesselScale, backdrop, lightWarmth, lightDirection }];
     future.current = [];
     setHistoryState({ undo: past.current.length, redo: future.current.length });
-  }, [bouquetRotation, stems, vessel, vesselColor, vesselOpacity, vesselScale]);
+  }, [bouquetRotation, stems, vessel, vesselColor, vesselOpacity, vesselScale, backdrop, lightWarmth, lightDirection]);
   const undo = () => {
     const previous = past.current.pop();
     if (!previous) return;
-    future.current.push({ stems, rotation: bouquetRotation, vessel, vesselColor, vesselOpacity, vesselScale });
+    future.current.push({ stems, rotation: bouquetRotation, vessel, vesselColor, vesselOpacity, vesselScale, backdrop, lightWarmth, lightDirection });
     setStems(previous.stems);
     setBouquetRotation(previous.rotation);
     setVessel(previous.vessel);
     setVesselColor(previous.vesselColor);
     setVesselOpacity(previous.vesselOpacity);
     setVesselScale(previous.vesselScale);
+    if (previous.backdrop) setBackdrop(previous.backdrop);
+    if (previous.lightWarmth !== undefined) setLightWarmth(previous.lightWarmth);
+    if (previous.lightDirection !== undefined) setLightDirection(previous.lightDirection);
     setSelectedId(null); setHeld(null); setHistoryState({ undo: past.current.length, redo: future.current.length });
   };
   const redo = () => {
     const next = future.current.pop();
     if (!next) return;
-    past.current.push({ stems, rotation: bouquetRotation, vessel, vesselColor, vesselOpacity, vesselScale });
+    past.current.push({ stems, rotation: bouquetRotation, vessel, vesselColor, vesselOpacity, vesselScale, backdrop, lightWarmth, lightDirection });
     setStems(next.stems);
     setBouquetRotation(next.rotation);
     setVessel(next.vessel);
     setVesselColor(next.vesselColor);
     setVesselOpacity(next.vesselOpacity);
     setVesselScale(next.vesselScale);
+    if (next.backdrop) setBackdrop(next.backdrop);
+    if (next.lightWarmth !== undefined) setLightWarmth(next.lightWarmth);
+    if (next.lightDirection !== undefined) setLightDirection(next.lightDirection);
     setSelectedId(null); setHeld(null); setHistoryState({ undo: past.current.length, redo: future.current.length });
   };
 
@@ -1811,27 +1925,35 @@ export default function FlowerStudio() {
   const selectedColorVariant = selectedStem?.colorVariant ?? "natural";
 
   useEffect(() => {
-    const value = window.location.hash.startsWith("#b=")
-      ? window.location.hash.slice(3)
-      : "";
-    if (!value) return;
-    const restored = decodeBouquet(value);
-    if (restored?.stems.length) {
-      const queryLanguage = new URLSearchParams(window.location.search).get("lang");
-      const savedLanguage = window.localStorage.getItem("bloomroom-language");
-      const restoredLanguage = ["zh", "en", "de", "fr"].includes(queryLanguage ?? "")
-        ? queryLanguage as Language
-        : ["zh", "en", "de", "fr"].includes(savedLanguage ?? "") ? savedLanguage as Language : "zh";
-      queueMicrotask(() => {
-        setStems(restored.stems);
-        setBouquetRotation(restored.rotation);
-        setVessel(restored.vessel);
-        setVesselColor(restored.vesselColor);
-        setVesselOpacity(restored.vesselOpacity);
-    setVesselScale(restored.vesselScale);
-        setToast(t(restoredLanguage, "restored"));
-      });
-    }
+    const handleRestore = () => {
+      const value = window.location.hash.startsWith("#b=")
+        ? window.location.hash.slice(3)
+        : "";
+      if (!value) return;
+      const restored = decodeBouquet(value);
+      if (restored?.stems.length) {
+        const queryLanguage = new URLSearchParams(window.location.search).get("lang");
+        const savedLanguage = window.localStorage.getItem("bloomroom-language");
+        const restoredLanguage = ["zh", "en", "de", "fr"].includes(queryLanguage ?? "")
+          ? queryLanguage as Language
+          : ["zh", "en", "de", "fr"].includes(savedLanguage ?? "") ? savedLanguage as Language : "zh";
+        queueMicrotask(() => {
+          setStems(restored.stems);
+          setBouquetRotation(restored.rotation);
+          setVessel(restored.vessel);
+          setVesselColor(restored.vesselColor);
+          setVesselOpacity(restored.vesselOpacity);
+          setVesselScale(restored.vesselScale);
+          setBackdrop(restored.backdrop);
+          setLightWarmth(restored.lightWarmth);
+          setLightDirection(restored.lightDirection);
+          setToast(t(restoredLanguage, "restored"));
+        });
+      }
+    };
+    handleRestore();
+    window.addEventListener("hashchange", handleRestore);
+    return () => window.removeEventListener("hashchange", handleRestore);
   }, []);
 
   useEffect(() => {
@@ -1994,6 +2116,9 @@ export default function FlowerStudio() {
     setVesselOpacity(100);
     setVesselScale(1);
     setBouquetRotation({ ...DEFAULT_BOUQUET_ROTATION });
+    setBackdrop("linen");
+    setLightWarmth(0);
+    setLightDirection(DEFAULT_LIGHT_DIRECTION);
     setHeld(null);
     setSelectedId(null);
     setDragId(null);
@@ -2035,10 +2160,11 @@ export default function FlowerStudio() {
       snapshot.height = height;
       const context = snapshot.getContext("2d");
       if (!context) { setToast(t(language, "captureError")); return; }
-      context.fillStyle = "#eee9dd";
+      const currentBackdropColor = BACKDROP_CONFIG[backdrop]?.color ?? "#EEE9DD";
+      context.fillStyle = currentBackdropColor;
       context.fillRect(0, 0, width, height);
       context.drawImage(photo, 0, 0, width, height);
-      setFinishImage(snapshot.toDataURL("image/jpeg", 0.84));
+      setFinishImage(snapshot.toDataURL("image/jpeg", 0.88));
       setShareUrl(null);
       setPostcardRender(null);
       setShareError("");
@@ -2056,7 +2182,17 @@ export default function FlowerStudio() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          bouquet: encodeBouquet(stems, bouquetRotation, vessel, vesselColor, vesselOpacity, vesselScale),
+          bouquet: encodeBouquet(
+            stems,
+            bouquetRotation,
+            vessel,
+            vesselColor,
+            vesselOpacity,
+            vesselScale,
+            backdrop,
+            lightWarmth,
+            lightDirection,
+          ),
           to: recipient,
           message: giftMessage,
           from: sender,
@@ -2178,7 +2314,13 @@ export default function FlowerStudio() {
           <p>{t(language, "intro")}</p>
         </div>
 
-        <div className="canvas-wrap" style={{ cursor: dragId ? "grabbing" : held ? "crosshair" : "default" }}>
+        <div
+          className="canvas-wrap"
+          style={{
+            backgroundColor: BACKDROP_CONFIG[backdrop]?.color,
+            cursor: dragId ? "grabbing" : held ? "crosshair" : "default",
+          }}
+        >
           <Canvas
             shadows
             dpr={[1, 1.5]}
@@ -2206,6 +2348,7 @@ export default function FlowerStudio() {
               vesselOpacity={vesselOpacity}
               vesselScale={vesselScale}
               bouquetRotation={bouquetRotation}
+              backdrop={backdrop}
               held={held}
               selectedId={selectedId}
               dragId={dragId}
@@ -2403,6 +2546,30 @@ export default function FlowerStudio() {
             <div className="tool-label">
               <span>{t(language, "morningLight")}</span>
               <Sparkles size={13} strokeWidth={1.4} />
+            </div>
+            <div className="backdrop-control">
+              <div className="backdrop-selector" role="radiogroup" aria-label={t(language, "backdrop")}>
+                {BACKDROP_OPTIONS.map((option) => {
+                  const isChecked = backdrop === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={isChecked}
+                      className="backdrop-pill"
+                      onClick={() => {
+                        checkpoint();
+                        setBackdrop(option.id);
+                      }}
+                      title={backdropName(language, option.id)}
+                    >
+                      <span className="backdrop-swatch" style={{ backgroundColor: option.color }} />
+                      <span className="backdrop-name">{backdropName(language, option.id)}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="light-adjustments">
               <label className="light-control" htmlFor="light-warmth">
