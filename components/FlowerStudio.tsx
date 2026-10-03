@@ -668,6 +668,21 @@ function getRandomBackdrop(): BackdropKind {
   return BACKDROP_OPTIONS[Math.floor(Math.random() * BACKDROP_OPTIONS.length)].id;
 }
 
+function getRandomLightWarmth(): number {
+  const steps = [-40, -30, -20, -10, 0, 10, 20, 30, 40, 50];
+  return steps[Math.floor(Math.random() * steps.length)];
+}
+
+function getRandomLightDirection(): number {
+  const stepCount = 33; // -80° to +80° in 5° steps
+  return -80 + Math.floor(Math.random() * stepCount) * 5;
+}
+
+function getRandomWind(): number {
+  const percent = Math.floor(15 + Math.random() * 31); // 15% to 45% (gentle breeze)
+  return percent / 100;
+}
+
 const VASE_PROFILES: Record<Exclude<VesselKind, "paper" | "canvas" | "naked">, [number, number][]> = {
   classic: [[0.46, 0], [0.53, 0.08], [0.61, 0.34], [0.65, 0.72], [0.61, 1.04], [0.49, 1.34], [0.45, 1.42]],
   bud: [[0.34, 0], [0.39, 0.08], [0.45, 0.42], [0.3, 0.72], [0.22, 1.04], [0.23, 1.35], [0.3, 1.42]],
@@ -2005,11 +2020,11 @@ export default function FlowerStudio() {
   const [held, setHeld] = useState<FlowerKind | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
-  const [lightWarmth, setLightWarmth] = useState(0);
-  const [lightDirection, setLightDirection] = useState(DEFAULT_LIGHT_DIRECTION);
+  const [lightWarmth, setLightWarmth] = useState(getRandomLightWarmth);
+  const [lightDirection, setLightDirection] = useState(getRandomLightDirection);
   const [backdrop, setBackdrop] = useState<BackdropKind>(getRandomBackdrop);
   const [category, setCategory] = useState<FlowerCategory>("main");
-  const [wind, setWind] = useState(0.32);
+  const [wind, setWind] = useState(getRandomWind);
   const [bouquetRotation, setBouquetRotation] = useState<BouquetRotation>({ ...DEFAULT_BOUQUET_ROTATION });
   const [rotationOpen, setRotationOpen] = useState(false);
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
@@ -2688,8 +2703,9 @@ export default function FlowerStudio() {
     setVesselScale(1);
     setBouquetRotation({ ...DEFAULT_BOUQUET_ROTATION });
     setBackdrop(getRandomBackdrop());
-    setLightWarmth(0);
-    setLightDirection(DEFAULT_LIGHT_DIRECTION);
+    setLightWarmth(getRandomLightWarmth());
+    setLightDirection(getRandomLightDirection());
+    setWind(getRandomWind());
     setHeld(null);
     setSelectedId(null);
     setDragId(null);
