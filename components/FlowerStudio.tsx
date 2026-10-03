@@ -2053,7 +2053,6 @@ export default function FlowerStudio() {
   const [historyState, setHistoryState] = useState({ undo: 0, redo: 0 });
   const projectPointerRef = useRef<((x: number, y: number) => THREE.Vector3 | null) | null>(null);
   const captureSceneRef = useRef<((highRes?: boolean) => string) | null>(null);
-  const finishOverlayRef = useRef<HTMLDivElement>(null);
   const paletteDrag = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   const suppressClick = useRef(false);
   useEffect(() => {
@@ -2173,24 +2172,6 @@ export default function FlowerStudio() {
     const timer = window.setTimeout(() => setToast(null), 2400);
     return () => window.clearTimeout(timer);
   }, [toast]);
-
-  useEffect(() => {
-    if (!finishOpen || !window.matchMedia("(max-width: 760px)").matches) return;
-    const overlay = finishOverlayRef.current;
-    const viewport = window.visualViewport;
-    if (!overlay || !viewport) return;
-    const update = () => {
-      overlay.style.setProperty("--visible-height", `${viewport.height}px`);
-      overlay.style.setProperty("--visible-top", `${viewport.offsetTop}px`);
-      const focused = document.activeElement;
-      if (focused instanceof HTMLElement && overlay.contains(focused) && focused.matches("input, textarea")) {
-        focused.scrollIntoView({ block: "nearest", inline: "nearest" });
-      }
-    };
-    update();
-    viewport.addEventListener("resize", update);
-    return () => viewport.removeEventListener("resize", update);
-  }, [finishOpen]);
 
   const endDrag = useCallback(() => setDragId(null), []);
 
@@ -3409,7 +3390,7 @@ export default function FlowerStudio() {
       </section>
 
       {finishOpen ? (
-        <div className="finish-overlay" role="dialog" aria-modal="true" ref={finishOverlayRef}>
+        <div className="finish-overlay" role="dialog" aria-modal="true">
           <div className="finish-card">
             <div
               className="finish-preview"

@@ -84,26 +84,13 @@ export default function AuthModal({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const overlayRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const viewport = window.visualViewport;
-    const updateViewport = () => {
-      overlayRef.current?.style.setProperty("--auth-visible-height", `${viewport?.height ?? window.innerHeight}px`);
-      overlayRef.current?.style.setProperty("--auth-visible-top", `${viewport?.offsetTop ?? 0}px`);
-    };
-    updateViewport();
     modalRef.current?.focus();
-    viewport?.addEventListener("resize", updateViewport);
-    viewport?.addEventListener("scroll", updateViewport);
-    window.addEventListener("resize", updateViewport);
     return () => {
-      viewport?.removeEventListener("resize", updateViewport);
-      viewport?.removeEventListener("scroll", updateViewport);
-      window.removeEventListener("resize", updateViewport);
       previousFocus?.focus();
     };
   }, [isOpen]);
@@ -162,7 +149,7 @@ export default function AuthModal({
   };
 
   return (
-    <div ref={overlayRef} className="auth-overlay" onClick={closeModal}>
+    <div className="auth-overlay" onClick={closeModal}>
       <div
         ref={modalRef}
         className="auth-modal"

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import VisualViewportSync from "@/components/VisualViewportSync";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://flower.fde.fan"),
@@ -54,7 +55,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body><VisualViewportSync />{children}</body>
     </html>
   );
 }

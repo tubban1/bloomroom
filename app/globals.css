@@ -1656,10 +1656,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid #7a8965; outline-
 @media (max-width: 760px) {
   .finish-overlay {
     position: fixed;
-    top: var(--visible-top, 0px);
+    top: var(--dialog-top, 0px);
     bottom: auto;
     width: 100%;
-    height: var(--visible-height, 100dvh);
+    height: var(--dialog-height, 100dvh);
     display: block;
     padding: 0;
     overflow: hidden;
@@ -1888,8 +1888,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid #7a8965; outline-
 /* ------------------------------------------------------------- */
 .auth-overlay {
   position: fixed;
-  inset: var(--auth-visible-top, 0px) 0 auto;
-  height: var(--auth-visible-height, 100dvh);
+  inset: var(--dialog-top, 0px) 0 auto;
+  height: var(--dialog-height, 100dvh);
   z-index: 1000;
   display: grid;
   place-items: center;
@@ -3577,4 +3577,60 @@ button:focus-visible, input:focus-visible { outline: 2px solid #7a8965; outline-
   .gallery-header-controls { width: 100%; justify-content: space-between; gap: 8px; }
   .gallery-sort-tabs { flex: 1; min-width: 0; }
   .gallery-sort-btn { flex: 1; justify-content: center; min-height: 44px; padding: 8px; }
+}
+
+/* iOS zooms focused controls below 16px. Cover every text-entry surface. */
+@media (max-width: 900px), (pointer: coarse) {
+  input:not([type="range"]):not([type="color"]):not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    font-size: 16px;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  .auth-overlay,
+  .garden-overlay,
+  .gallery-modal-overlay,
+  .gallery-detail-overlay,
+  .finish-overlay {
+    position: fixed;
+    inset: var(--dialog-top, 0px) 0 auto;
+    height: var(--dialog-height, 100dvh);
+    min-width: 0;
+    overflow: hidden;
+  }
+  .auth-modal,
+  .garden-modal,
+  .gallery-modal-container,
+  .gallery-detail-card {
+    max-width: 100%;
+    max-height: 100%;
+    min-height: 0;
+    overscroll-behavior: contain;
+  }
+  .garden-header,
+  .garden-tabs { flex-shrink: 0; }
+  .garden-header-title > div { min-width: 0; }
+  .garden-badge { flex-shrink: 0; }
+  .garden-user-label { overflow-wrap: anywhere; }
+  .garden-grid { grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); }
+  .garden-card,
+  .garden-card-body,
+  .garden-rename-form,
+  .garden-card-title-row,
+  .garden-title-row { min-width: 0; }
+  .garden-rename-form { display: flex; gap: 6px; align-items: center; }
+  .garden-rename-form input { flex: 1; width: 0; min-height: 44px; }
+  .garden-rename-save { flex-shrink: 0; min-width: 44px; min-height: 44px; }
+  .garden-card-title-row h3,
+  .garden-title-row h3 { min-width: 0; overflow-wrap: anywhere; }
+  .garden-inline-rename,
+  .garden-icon-btn { flex-shrink: 0; }
+  .gift-fields,
+  .share-result { min-width: 0; }
+  .gift-fields textarea { max-width: 100%; }
+  .gallery-detail-card { overflow-y: auto; }
 }
