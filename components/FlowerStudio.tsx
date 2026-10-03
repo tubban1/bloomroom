@@ -12,6 +12,7 @@ import {
   Check,
   Compass,
   Copy,
+  Box,
   Download,
   Flower2,
   Globe,
@@ -23,6 +24,7 @@ import {
   SlidersHorizontal,
   Sparkles,
   User as UserIcon,
+  Volume2,
   Wind,
   X,
 } from "lucide-react";
@@ -117,6 +119,25 @@ type Stem = {
 };
 
 type BouquetRotation = { x: number; y: number; z: number };
+
+export const BOUQUET_CENTER_X = -0.42;
+
+export type LightPresetKind = "morning" | "daylight" | "twilight" | "oil";
+
+export const LIGHT_PRESETS: {
+  id: LightPresetKind;
+  labelKey: "morningLight" | "daylight" | "twilight" | "oilPainting";
+  warmth: number;
+  direction: number;
+  backdrop: BackdropKind;
+}[] = [
+  { id: "morning", labelKey: "morningLight", warmth: -15, direction: -45, backdrop: "linen" },
+  { id: "daylight", labelKey: "daylight", warmth: 0, direction: -15, backdrop: "limestone" },
+  { id: "twilight", labelKey: "twilight", warmth: 45, direction: 60, backdrop: "linen" },
+  { id: "oil", labelKey: "oilPainting", warmth: 30, direction: -50, backdrop: "charcoal" },
+];
+
+export type StudioDrawer = "scene" | "flowers" | "vessels" | "sound";
 
 export type BackdropKind = "linen" | "limestone" | "charcoal" | "forest";
 
@@ -898,10 +919,10 @@ function autoPlacementPoint(kind: FlowerKind, stems: Stem[], vessel: VesselKind,
   // insertion so the source branch does not get tilted a second time.
   if (kind === "delphinium") {
     const spikeIndex = stems.filter((stem) => stem.kind === kind).length;
-    return new THREE.Vector3(0.72 + (spikeIndex % 2 ? 0.8 : -0.8) * spread, stemInsertionY(vessel) * vesselScale + 3.05, -0.24);
+    return new THREE.Vector3(BOUQUET_CENTER_X + (spikeIndex % 2 ? 0.8 : -0.8) * spread, stemInsertionY(vessel) * vesselScale + 3.05, -0.24);
   }
   const leanX = kind === "ivy" ? -0.18 : slot.leanX + (layer % 2 ? 0.13 : 0);
-  return new THREE.Vector3(0.72 + leanX * spread, stemInsertionY(vessel) * vesselScale + slot.height - layer * 0.06, slot.z - layer * 0.04);
+  return new THREE.Vector3(BOUQUET_CENTER_X + leanX * spread, stemInsertionY(vessel) * vesselScale + slot.height - layer * 0.06, slot.z - layer * 0.04);
 }
 
 function FlowerStem({
@@ -1339,7 +1360,7 @@ function CameraRig({ bouquetRef, dragging }: { bouquetRef: React.RefObject<THREE
     if (size.width <= 760 && bouquetRef.current) {
       bounds.setFromObject(bouquetRef.current);
       if (!bounds.isEmpty()) {
-        const halfWidth = Math.max(Math.abs(bounds.min.x - 0.72), Math.abs(bounds.max.x - 0.72));
+        const halfWidth = Math.max(Math.abs(bounds.min.x - BOUQUET_CENTER_X), Math.abs(bounds.max.x - BOUQUET_CENTER_X));
         targetZoom = Math.min(defaultZoom, (size.width - 32) / (halfWidth * 2 + 0.4));
       }
     }
@@ -1352,7 +1373,7 @@ function CameraRig({ bouquetRef, dragging }: { bouquetRef: React.RefObject<THREE
   return <OrthographicCamera
     ref={cameraRef}
     makeDefault
-    position={[0.72, 3.65, 12]}
+    position={[BOUQUET_CENTER_X, 3.65, 12]}
     rotation={[-Math.atan2(0.75, 12), 0, 0]}
     zoom={defaultZoom}
     near={0.1}
@@ -1376,7 +1397,7 @@ function PreviewStem({
       x: 0,
       z: clamp(point.z, -0.25, 0.25),
       height: clamp(point.y - stemBaseY, 0.8, 3.2),
-      leanX: clamp(point.x - 0.72, -1.7, 1.7),
+      leanX: clamp(point.x - BOUQUET_CENTER_X, -1.7, 1.7),
       leanZ: clamp(point.z - clamp(point.z, -0.25, 0.25), -0.5, 0.5),
       seed: 2.2,
     }),
@@ -1438,7 +1459,7 @@ function StudioScene({
   const stemBaseY = stemInsertionY(vessel) * vesselScale;
   const canvasElementRef = useRef<HTMLCanvasElement | null>(null);
   const [hoverPoint, setHoverPoint] = useState(
-    () => new THREE.Vector3(0.72, 3.7, 0),
+    () => new THREE.Vector3(BOUQUET_CENTER_X, 3.7, 0),
   );
 
   const { camera, gl, scene } = useThree();
@@ -1477,7 +1498,7 @@ function StudioScene({
   const pointToStudioSpace = useCallback((worldPoint: THREE.Vector3) => {
     const point = worldPoint.clone();
     if (bouquetGroupRef.current) bouquetGroupRef.current.worldToLocal(point);
-    return point.add(new THREE.Vector3(0.72, 0.06, 0));
+    return point.add(new THREE.Vector3(BOUQUET_CENTER_X, 0.06, 0));
   }, []);
   useEffect(() => {
     projectPointerRef.current = (x, y) => {
@@ -1506,7 +1527,7 @@ function StudioScene({
     const stem = stems.find((item) => item.id === id)!;
     const lean = naturalLean(stem.kind, stem.height, stem.leanX, stem.leanZ, stemVisualScale(stem, wrapped));
     const localTip = stemAxisTip(stem.height, lean.x, lean.z).add(new THREE.Vector3(stem.x, stemBaseY, stem.z));
-    const tip = bouquetGroupRef.current?.localToWorld(localTip.clone()) ?? localTip.add(new THREE.Vector3(0.72, 0.06, 0));
+    const tip = bouquetGroupRef.current?.localToWorld(localTip.clone()) ?? localTip.add(new THREE.Vector3(BOUQUET_CENTER_X, 0.06, 0));
     const rotation = bouquetGroupRef.current?.getWorldQuaternion(new THREE.Quaternion()) ?? new THREE.Quaternion();
     const planeNormal = new THREE.Vector3(0, 0, 1).applyQuaternion(rotation);
     const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(planeNormal, tip);
@@ -1660,7 +1681,7 @@ function StudioScene({
 
       <group
         ref={bouquetGroupRef}
-        position={[0.72, 0.06, 0]}
+        position={[BOUQUET_CENTER_X, 0.06, 0]}
         rotation={[bouquetRotation.x * Math.PI / 180, bouquetRotation.y * Math.PI / 180, bouquetRotation.z * Math.PI / 180]}
         onPointerDown={beginBouquetRotate}
         onPointerOver={(event) => {
@@ -1692,7 +1713,7 @@ function StudioScene({
       </group>
 
       <ContactShadows
-        position={[0.72, 0.02, 0]}
+        position={[BOUQUET_CENTER_X, 0.02, 0]}
         opacity={0.28}
         scale={5}
         blur={2.5}
@@ -2022,8 +2043,7 @@ export default function FlowerStudio() {
   const [vesselColor, setVesselColor] = useState<string>(() => getRandomVesselColor(initialVessel));
   const [vesselOpacity, setVesselOpacity] = useState(100);
   const [vesselScale, setVesselScale] = useState<number>(getRandomVesselScale);
-  const [vesselAdjustOpen, setVesselAdjustOpen] = useState(false);
-  const [libraryMode, setLibraryMode] = useState<LibraryMode>("flowers");
+  const [activeDrawer, setActiveDrawer] = useState<StudioDrawer | null>("scene");
   const [vesselCategory, setVesselCategory] = useState<"vase" | "bouquet" | "imagination">(() => (
     VESSEL_OPTIONS.find((option) => option.kind === initialVessel)?.category ?? "vase"
   ));
@@ -2036,7 +2056,6 @@ export default function FlowerStudio() {
   const [category, setCategory] = useState<FlowerCategory>("main");
   const [wind, setWind] = useState(getRandomWind);
   const [bouquetRotation, setBouquetRotation] = useState<BouquetRotation>({ ...DEFAULT_BOUQUET_ROTATION });
-  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   const [finishOpen, setFinishOpen] = useState(false);
   const [finishImage, setFinishImage] = useState<string | null>(null);
   const [highResImage, setHighResImage] = useState<string | null>(null);
@@ -2274,7 +2293,7 @@ export default function FlowerStudio() {
     setBouquetRotation({ ...DEFAULT_BOUQUET_ROTATION });
     setSelectedId(null);
     setHeld(null);
-    setLibraryMode("vessels");
+    setActiveDrawer("vessels");
     setVesselCategory("imagination");
     setToast(`${presetName(language, preset.id as "first-light" | "meadow-air" | "cloud-study")} · ${t(language, "adjust")}`);
   };
@@ -2284,7 +2303,7 @@ export default function FlowerStudio() {
       if (!kind) return;
       if (stems.length >= 24) { setToast(t(language, "full")); setHeld(null); return; }
       checkpoint();
-      const dx = point.x - 0.72;
+      const dx = point.x - BOUQUET_CENTER_X;
       const height = clamp(point.y - stemInsertionY(vessel) * vesselScale, 0.8, 3.2);
       const z = clamp(point.z, -0.25, 0.25);
       const lean = naturalLean(kind, height, clamp(dx, -1.7, 1.7), clamp(point.z - z, -0.5, 0.5));
@@ -2305,7 +2324,6 @@ export default function FlowerStudio() {
       } else {
         setSelectedId(next.id);
       }
-      setMobileToolsOpen(false);
       setHeld(null);
     },
     [held, stems.length, checkpoint, vessel, vesselScale, language],
@@ -2313,7 +2331,7 @@ export default function FlowerStudio() {
 
   const dragFlower = useCallback(
     (id: string, point: THREE.Vector3) => {
-      const dx = point.x - 0.72;
+      const dx = point.x - BOUQUET_CENTER_X;
       setStems((current) =>
         current.map((stem) =>
           stem.id === id ? (() => {
@@ -3059,10 +3077,9 @@ export default function FlowerStudio() {
       <section
         className="workspace"
         aria-label={t(language, "brand")}
-        data-library-mode={libraryMode}
+        data-drawer={activeDrawer ?? "none"}
+        data-drawer-open={activeDrawer ? "true" : "false"}
         data-editing={selectedStem ? "true" : "false"}
-        data-tools-open={mobileToolsOpen ? "true" : "false"}
-        data-vessel-open={vesselAdjustOpen ? "true" : "false"}
       >
         <div className="hero-copy">
           <div className="eyebrow">{t(language, "step")}</div>
@@ -3108,7 +3125,7 @@ export default function FlowerStudio() {
               held={held}
               selectedId={selectedId}
               dragId={dragId}
-              onSelect={(id) => { setSelectedId(id); if (id) { setMobileToolsOpen(false); setVesselAdjustOpen(false); } }}
+              onSelect={(id) => setSelectedId(id)}
               onDragStart={(id) => { checkpoint(); setDragId(id); }}
               onPlace={placeFlower}
               onDrag={dragFlower}
@@ -3121,275 +3138,425 @@ export default function FlowerStudio() {
           </Canvas>
         </div>
 
-        <aside className={libraryMode === "vessels" ? "palette has-vessel-library" : "palette"} aria-label={t(language, "library")}>
-          <div className="palette-modes" role="tablist" aria-label={t(language, "library")}>
-            {([
-              ["flowers", t(language, "flowers"), t(language, "flowers")],
-              ["vessels", t(language, "containers"), t(language, "containers")],
-            ] as [LibraryMode, string, string][]).map(([mode, label, subtitle]) => (
-              <button key={mode} type="button" role="tab" aria-selected={libraryMode === mode}
-                className={libraryMode === mode ? "palette-mode active" : "palette-mode"}
-                onClick={() => {
-                  setLibraryMode(mode);
-                  if (mode !== "flowers") setHeld(null);
-                }}>
-                <span>{label}</span><small>{subtitle}</small>
-              </button>
-            ))}
-          </div>
-
-          <div className="palette-header">
-            <div>
-              <span className="palette-step">{libraryMode === "flowers" ? `01 / ${t(language, "flowers")}` : `02 / ${t(language, "containers")}`}</span>
-              <h2>{libraryMode === "flowers" ? t(language, "chooseFlowers") : t(language, "chooseContainer")}</h2>
-              <p>{libraryMode === "flowers" ? t(language, "chooseFlowersHint") : t(language, "chooseContainerHint")}</p>
-            </div>
-          </div>
-
-          {libraryMode === "flowers" ? <>
-            <div className="category-tabs" role="tablist" aria-label={t(language, "flowers")}>
-              {(Object.keys(CATEGORY_LABELS) as FlowerCategory[]).map((item) => {
-                const count = FLOWERS.filter((flower) => flower.category === item && flower.kind !== "blue-poppy").length;
-                return <button key={item} type="button" role="tab" aria-selected={category === item}
-                  className={category === item ? "category-tab active" : "category-tab"}
-                  onClick={() => setCategory(item)}>
-                  <span>{categoryName(language, item)}</span><small>{categoryName(language, item)} · {count}</small>
-                </button>;
-              })}
-            </div>
-            <div className="flower-grid">
-              {FLOWERS.filter((flower) => flower.category === category && flower.kind !== "blue-poppy").map((flower) => (
-              <button
-                key={flower.kind}
-                className={
-                  held === flower.kind
-                    ? "flower-card is-held"
-                    : "flower-card"
-                }
-                type="button"
-                aria-pressed={held === flower.kind}
-                onPointerDown={(event) => {
-                  if (event.button !== 0 || event.pointerType === "touch") return;
-                  suppressClick.current = false;
-                  paletteDrag.current = { x: event.clientX, y: event.clientY, moved: false };
-                  event.currentTarget.setPointerCapture(event.pointerId);
-                }}
-                onPointerMove={(event) => {
-                  if (event.pointerType === "touch") return;
-                  const active = paletteDrag.current;
-                  if (!active || !event.currentTarget.hasPointerCapture(event.pointerId)) return;
-                  if (!active.moved && Math.hypot(event.clientX - active.x, event.clientY - active.y) < 7) return;
-                  active.moved = true;
-                  setHeld(flower.kind); setSelectedId(null);
-                  projectPointerRef.current?.(event.clientX, event.clientY);
-                }}
-                onPointerUp={(event) => {
-                  const active = paletteDrag.current;
-                  paletteDrag.current = null;
-                  if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-                  if (!active?.moved) return;
-                  suppressClick.current = true;
-                  const target = document.elementFromPoint(event.clientX, event.clientY);
-                  if (target?.closest(".canvas-wrap")) {
-                    const point = projectPointerRef.current?.(event.clientX, event.clientY);
-                    if (point) placeFlower(point, flower.kind);
-                  } else setHeld(null);
-                }}
-                onPointerCancel={() => { paletteDrag.current = null; setHeld(null); }}
-                onClick={() => { if (suppressClick.current) { suppressClick.current = false; return; } placeFlower(autoPlacementPoint(flower.kind, stems, vessel, vesselScale), flower.kind); }}
-              >
-                <FlowerThumbnail kind={flower.kind} />
-                <span className="flower-card-plus" aria-hidden="true">+</span>
-                <strong>{flowerName(language, flower.kind)}</strong>
-                <small>{flower.latin}</small>
-                {stems.some((stem) => stem.kind === flower.kind) ? <span className="added-indicator">{t(language, "added")} · {stems.filter((stem) => stem.kind === flower.kind).length}</span> : null}
-                {flower.availability !== "available" ? (
-                  <span
-                    className={`availability ${flower.availability}`}
-                  >
-                    {flower.availability === "play"
-                      ? t(language, "studioOnly")
-                      : t(language, "preorder")}
-                  </span>
-                ) : null}
-              </button>
-              ))}
-            </div>
-          </> : null}
-
-          {libraryMode === "vessels" ? <div className="library-scroll vessel-library">
-            <div className="vessel-tabs" role="tablist" aria-label={t(language, "containers")}>
-              <button type="button" role="tab" aria-selected={vesselCategory === "vase"} className={vesselCategory === "vase" ? "vessel-tab active" : "vessel-tab"} onClick={() => setVesselCategory("vase")}>{t(language, "vase")}</button>
-              <button type="button" role="tab" aria-selected={vesselCategory === "bouquet"} className={vesselCategory === "bouquet" ? "vessel-tab active" : "vessel-tab"} onClick={() => setVesselCategory("bouquet")}>{t(language, "bouquets")}</button>
-              <button type="button" role="tab" aria-selected={vesselCategory === "imagination"} className={vesselCategory === "imagination" ? "vessel-tab active" : "vessel-tab"} onClick={() => setVesselCategory("imagination")}>{t(language, "imagination")}</button>
-            </div>
-            {vesselCategory === "imagination" ? <div className="vessel-options-scroll bouquet-grid">
-              {BOUQUET_PRESETS.map((preset) => (
-                <button key={preset.id} type="button" className="bouquet-card" onClick={() => applyBouquetPreset(preset)}>
-                  <BouquetThumbnail preset={preset} />
-              <span className="bouquet-card-copy"><strong>{presetName(language, preset.id as "first-light" | "meadow-air" | "cloud-study")}</strong><small>{presetNote(language, preset.id as "first-light" | "meadow-air" | "cloud-study")}</small></span>
-                  <span className="bouquet-card-count">{preset.stems.length} {t(language, "stems")}</span>
-                </button>
-              ))}
-            </div> : <div className="vessel-options-scroll vessel-grid">
-              {VESSEL_OPTIONS.filter((option) => option.category === vesselCategory).map((option) => (
-                <button key={option.kind} type="button" aria-pressed={vessel === option.kind}
-                  className={vessel === option.kind ? "vessel-card active" : "vessel-card"}
-                  onClick={() => chooseVessel(option.kind)}>
-                  <VesselThumbnail
-                    option={option}
-                    vesselColor={vessel === option.kind ? vesselColor : getDefaultVesselColor(option.kind)}
-                    vesselOpacity={vessel === option.kind ? vesselOpacity : 100}
-                  />
-                  <strong>{vesselName(language, option.kind)}</strong><small>{vesselNote(language, option.kind)}</small>
-                </button>
-              ))}
-            </div>}
-          </div> : null}
-        </aside>
-
-        <button type="button" className="vessel-adjust-toggle" aria-expanded={vesselAdjustOpen} aria-controls="vessel-adjust-panel" disabled={vessel === "naked"} onClick={() => { setVesselAdjustOpen((open) => !open); setSelectedId(null); setMobileToolsOpen(false); }}><SlidersHorizontal size={15} /> {t(language, "adjustContainer")}</button>
-        {vesselAdjustOpen && vessel !== "naked" && <section id="vessel-adjust-panel" className="selection-card vessel-adjust-panel" aria-label={t(language, "adjustContainer")}>
-          <div className="vessel-adjust-heading"><strong>{t(language, "adjustContainer")}</strong><button type="button" aria-label={t(language, "done")} onClick={() => setVesselAdjustOpen(false)}><X size={17} /></button></div>
-          <div className="vessel-rotate-guide">
-            <p className="vessel-rotate-hint">{t(language, "rotateHint")}</p>
-            {(bouquetRotation.x !== 0 || bouquetRotation.y !== 0 || bouquetRotation.z !== 0) && (
-              <button
-                type="button"
-                className="vessel-rotation-reset"
-                onClick={() => {
-                  checkpoint();
-                  setBouquetRotation({ ...DEFAULT_BOUQUET_ROTATION });
-                }}
-              >
-                <RotateCcw size={12} />
-                <span>{t(language, "resetRotation")}</span>
-              </button>
-            )}
-          </div>
-            <div className="vessel-appearance">
-              <span className="vessel-appearance-title">{t(language, "containerColor")}</span>
-              <div className="color-options" role="group" aria-label={t(language, "containerColor")}>
-                {getVesselColors(vessel).map((option) => <button
-                  key={option.color}
-                  type="button"
-                  className="color-option"
-                  style={{ "--petal-color": option.color } as React.CSSProperties}
-                  aria-label={colorName(language, option.label)}
-                  aria-pressed={vesselColor === option.color}
-                  title={colorName(language, option.label)}
-                  onClick={() => chooseVesselColor(option.color)}
-                ><span /></button>)}
-              </div>
-              <label htmlFor="vessel-opacity"><span>{t(language, "opacity")}</span><output>{vesselOpacity}%</output></label>
-              <input
-                id="vessel-opacity"
-                className="range"
-                type="range"
-                min="0"
-                max="100"
-                step="5"
-                value={vesselOpacity}
-                aria-label={t(language, "opacity")}
-                onPointerDown={checkpoint}
-                onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) checkpoint(); }}
-                onChange={(event) => setVesselOpacity(Number(event.target.value))}
-              />
-              <label htmlFor="vessel-size"><span>{t(language, "containerSize")}</span><output>{Math.round(vesselScale * 100)}%</output></label>
-              <input id="vessel-size" className="range" type="range" min="70" max="130" step="1" value={Math.round(vesselScale * 100)} aria-label={t(language, "containerSize")} onPointerDown={checkpoint} onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) checkpoint(); }} onChange={(event) => setVesselScale(Number(event.target.value) / 100)} />
-            </div>
-        </section>}
-
-        <button type="button" className="mobile-tools-toggle" aria-expanded={mobileToolsOpen} aria-controls="studio-scene-tools"
-          onClick={() => { setMobileToolsOpen((open) => !open); setSelectedId(null); setVesselAdjustOpen(false); }}>
-          {mobileToolsOpen ? <X size={17} /> : <SlidersHorizontal size={17} />}
-          <span>{t(language, "tools")}</span>
-        </button>
-        <aside id="studio-scene-tools" className={mobileToolsOpen ? "scene-tools mobile-open" : "scene-tools"} aria-label={t(language, "tools")}>
-          <div className="mobile-tools-header">
-            <strong>{t(language, "tools")}</strong>
+        {/* 右侧四个窗口抽屉系统 */}
+        <div className={`studio-drawers ${activeDrawer ? "has-open" : "collapsed"}`}>
+          <nav className="studio-tabs-bar" role="tablist" aria-label={t(language, "tools")}>
             <button
               type="button"
-              className="mobile-tools-close"
-              onClick={() => setMobileToolsOpen(false)}
-              aria-label={t(language, "done")}
+              role="tab"
+              aria-selected={activeDrawer === "scene"}
+              className={`studio-tab-btn ${activeDrawer === "scene" ? "active" : ""}`}
+              onClick={() => setActiveDrawer((cur) => cur === "scene" ? null : "scene")}
+              title={t(language, "scene")}
             >
-              <X size={17} />
+              <Sparkles size={14} />
+              <span>{t(language, "scene")}</span>
             </button>
-          </div>
-          <div className="tool-section">
-            <button type="button" className="adjust-toggle" disabled={!stems.length}
-              aria-expanded={!!selectedStem}
-              onClick={() => { setVesselAdjustOpen(false); setSelectedId(selectedStem ? null : stems[0].id); setMobileToolsOpen(false); }}>
-              <span>{t(language, "adjust")}</span><span>{stems.length}</span>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeDrawer === "flowers"}
+              className={`studio-tab-btn ${activeDrawer === "flowers" ? "active" : ""}`}
+              onClick={() => setActiveDrawer((cur) => cur === "flowers" ? null : "flowers")}
+              title={t(language, "flowers")}
+            >
+              <Flower2 size={14} />
+              <span>{t(language, "flowers")}</span>
             </button>
-            <p className="rotation-hint">{t(language, "adjustHint")}</p>
-          </div>
-          <div className="tool-section">
-            <div className="tool-label">
-              <span>{t(language, "morningLight")}</span>
-              <Sparkles size={13} strokeWidth={1.4} />
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeDrawer === "vessels"}
+              className={`studio-tab-btn ${activeDrawer === "vessels" ? "active" : ""}`}
+              onClick={() => setActiveDrawer((cur) => cur === "vessels" ? null : "vessels")}
+              title={t(language, "adjustContainer")}
+            >
+              <Box size={14} />
+              <span>{t(language, "adjustContainer")}</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeDrawer === "sound"}
+              className={`studio-tab-btn ${activeDrawer === "sound" ? "active" : ""}`}
+              onClick={() => setActiveDrawer((cur) => cur === "sound" ? null : "sound")}
+              title={t(language, "ambience")}
+            >
+              <Volume2 size={14} />
+              <span>{t(language, "ambience")}</span>
+            </button>
+          </nav>
+
+          <aside className={`studio-drawer-panel ${activeDrawer ? "open" : "closed"}`} aria-label={t(language, "tools")}>
+            <div className="drawer-panel-header">
+              <strong>
+                {activeDrawer === "scene" && t(language, "scene")}
+                {activeDrawer === "flowers" && t(language, "flowers")}
+                {activeDrawer === "vessels" && t(language, "adjustContainer")}
+                {activeDrawer === "sound" && t(language, "ambience")}
+              </strong>
+              <button
+                type="button"
+                className="drawer-close-btn"
+                onClick={() => setActiveDrawer(null)}
+                aria-label={t(language, "close")}
+              >
+                <X size={15} />
+              </button>
             </div>
-            <div className="backdrop-control">
-              <div className="backdrop-selector" role="radiogroup" aria-label={t(language, "backdrop")}>
-                {BACKDROP_OPTIONS.map((option) => {
-                  const isChecked = backdrop === option.id;
-                  return (
+
+            <div className="drawer-panel-body">
+              {/* 1. 场景 */}
+              <div className="drawer-pane" style={{ display: activeDrawer === "scene" ? "block" : "none" }}>
+                <div className="tool-section">
+                  <div className="tool-label">
+                    <span>{t(language, "backdrop")}</span>
+                  </div>
+                  <div className="backdrop-control">
+                    <div className="backdrop-selector" role="radiogroup" aria-label={t(language, "backdrop")}>
+                      {BACKDROP_OPTIONS.map((option) => {
+                        const isChecked = backdrop === option.id;
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={isChecked}
+                            className={`backdrop-pill ${isChecked ? "active" : ""}`}
+                            onClick={() => {
+                              checkpoint();
+                              setBackdrop(option.id);
+                            }}
+                            title={backdropName(language, option.id)}
+                          >
+                            <span className="backdrop-swatch" style={{ backgroundColor: option.color }} />
+                            <span className="backdrop-name">{backdropName(language, option.id)}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 光影预设 [ 晨光 ] [ 日光 ] [ 暮光 ] [ 油画 ] */}
+                <div className="tool-section">
+                  <div className="tool-label">
+                    <span>{t(language, "lighting")}</span>
+                    <Sparkles size={13} strokeWidth={1.4} />
+                  </div>
+                  <div className="light-presets-row" role="group" aria-label={t(language, "lighting")}>
+                    {LIGHT_PRESETS.map((preset) => {
+                      const isSelected = backdrop === preset.backdrop && lightWarmth === preset.warmth && lightDirection === preset.direction;
+                      return (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          className={`light-preset-btn ${isSelected ? "active" : ""}`}
+                          onClick={() => {
+                            checkpoint();
+                            setBackdrop(preset.backdrop);
+                            setLightWarmth(preset.warmth);
+                            setLightDirection(preset.direction);
+                          }}
+                        >
+                          {t(language, preset.labelKey)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="tool-section">
+                  <label className="light-control" htmlFor="light-warmth">
+                    <span>{t(language, "warmth")}</span>
+                    <output>{lightWarmth === 0 ? t(language, "balanced") : lightWarmth > 0 ? `+${lightWarmth}` : lightWarmth}</output>
+                  </label>
+                  <input
+                    id="light-warmth"
+                    className="range"
+                    type="range"
+                    min="-100"
+                    max="100"
+                    value={lightWarmth}
+                    aria-label={t(language, "warmth")}
+                    onChange={(event) => setLightWarmth(Number(event.target.value))}
+                  />
+                  <div className="light-scale">
+                    <span>{t(language, "cool")}</span>
+                    <span>{t(language, "warm")}</span>
+                  </div>
+                </div>
+
+                <div className="tool-section">
+                  <label className="light-control" htmlFor="light-direction">
+                    <span>{t(language, "direction")}</span>
+                    <output>{lightDirection}°</output>
+                  </label>
+                  <input
+                    id="light-direction"
+                    className="range"
+                    type="range"
+                    min="-180"
+                    max="180"
+                    value={lightDirection}
+                    aria-label={t(language, "direction")}
+                    onChange={(event) => setLightDirection(Number(event.target.value))}
+                  />
+                  <div className="light-scale">
+                    <span>{t(language, "turnLeft")}</span>
+                    <span>{t(language, "turnRight")}</span>
+                  </div>
+                </div>
+
+                {/* 微风（只保留一个开关） */}
+                <div className="tool-section wind-tool-section">
+                  <div className="wind-switch-row">
+                    <div className="tool-label">
+                      <Wind size={14} strokeWidth={1.5} />
+                      <span>{t(language, "wind")}</span>
+                    </div>
                     <button
-                      key={option.id}
                       type="button"
-                      role="radio"
-                      aria-checked={isChecked}
-                      className="backdrop-pill"
+                      role="switch"
+                      aria-checked={wind > 0}
+                      aria-label={t(language, "wind")}
+                      className={`studio-switch ${wind > 0 ? "active" : ""}`}
                       onClick={() => {
                         checkpoint();
-                        setBackdrop(option.id);
+                        setWind(wind > 0 ? 0 : 0.32);
                       }}
-                      title={backdropName(language, option.id)}
                     >
-                      <span className="backdrop-swatch" style={{ backgroundColor: option.color }} />
-                      <span className="backdrop-name">{backdropName(language, option.id)}</span>
+                      <span className="studio-switch-thumb" />
                     </button>
-                  );
-                })}
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. 花材 */}
+              <div className="drawer-pane" style={{ display: activeDrawer === "flowers" ? "block" : "none" }}>
+                {stems.length > 0 && (
+                  <div className="tool-section stem-adjust-entry">
+                    <button
+                      type="button"
+                      className="adjust-toggle"
+                      aria-expanded={!!selectedStem}
+                      onClick={() => setSelectedId(selectedStem ? null : stems[stems.length - 1].id)}
+                    >
+                      <span>{t(language, "adjust")}</span>
+                      <span>{stems.length}</span>
+                    </button>
+                    <p className="rotation-hint">{t(language, "adjustHint")}</p>
+                  </div>
+                )}
+
+                <div className="category-tabs" role="tablist" aria-label={t(language, "flowers")}>
+                  {(Object.keys(CATEGORY_LABELS) as FlowerCategory[]).map((item) => {
+                    const count = FLOWERS.filter((flower) => flower.category === item && flower.kind !== "blue-poppy").length;
+                    return (
+                      <button
+                        key={item}
+                        type="button"
+                        role="tab"
+                        aria-selected={category === item}
+                        className={category === item ? "category-tab active" : "category-tab"}
+                        onClick={() => setCategory(item)}
+                      >
+                        <span>{categoryName(language, item)}</span>
+                        <small>{count}</small>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="flower-grid">
+                  {FLOWERS.filter((flower) => flower.category === category && flower.kind !== "blue-poppy").map((flower) => (
+                    <button
+                      key={flower.kind}
+                      className={held === flower.kind ? "flower-card is-held" : "flower-card"}
+                      type="button"
+                      aria-pressed={held === flower.kind}
+                      onPointerDown={(event) => {
+                        if (event.button !== 0 || event.pointerType === "touch") return;
+                        suppressClick.current = false;
+                        paletteDrag.current = { x: event.clientX, y: event.clientY, moved: false };
+                        event.currentTarget.setPointerCapture(event.pointerId);
+                      }}
+                      onPointerMove={(event) => {
+                        if (event.pointerType === "touch") return;
+                        const active = paletteDrag.current;
+                        if (!active || !event.currentTarget.hasPointerCapture(event.pointerId)) return;
+                        if (!active.moved && Math.hypot(event.clientX - active.x, event.clientY - active.y) < 7) return;
+                        active.moved = true;
+                        setHeld(flower.kind);
+                        setSelectedId(null);
+                        projectPointerRef.current?.(event.clientX, event.clientY);
+                      }}
+                      onPointerUp={(event) => {
+                        const active = paletteDrag.current;
+                        paletteDrag.current = null;
+                        if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+                        if (!active?.moved) return;
+                        suppressClick.current = true;
+                        const target = document.elementFromPoint(event.clientX, event.clientY);
+                        if (target?.closest(".canvas-wrap")) {
+                          const point = projectPointerRef.current?.(event.clientX, event.clientY);
+                          if (point) placeFlower(point, flower.kind);
+                        } else setHeld(null);
+                      }}
+                      onPointerCancel={() => { paletteDrag.current = null; setHeld(null); }}
+                      onClick={() => {
+                        if (suppressClick.current) { suppressClick.current = false; return; }
+                        placeFlower(autoPlacementPoint(flower.kind, stems, vessel, vesselScale), flower.kind);
+                      }}
+                    >
+                      <FlowerThumbnail kind={flower.kind} />
+                      <span className="flower-card-plus" aria-hidden="true">+</span>
+                      <strong>{flowerName(language, flower.kind)}</strong>
+                      <small>{flower.latin}</small>
+                      {stems.some((stem) => stem.kind === flower.kind) ? (
+                        <span className="added-indicator">{t(language, "added")} · {stems.filter((stem) => stem.kind === flower.kind).length}</span>
+                      ) : null}
+                      {flower.availability !== "available" ? (
+                        <span className={`availability ${flower.availability}`}>
+                          {flower.availability === "play" ? t(language, "studioOnly") : t(language, "preorder")}
+                        </span>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. 容器 */}
+              <div className="drawer-pane" style={{ display: activeDrawer === "vessels" ? "block" : "none" }}>
+                <div className="vessel-tabs" role="tablist" aria-label={t(language, "containers")}>
+                  <button type="button" role="tab" aria-selected={vesselCategory === "vase"} className={vesselCategory === "vase" ? "vessel-tab active" : "vessel-tab"} onClick={() => setVesselCategory("vase")}>{t(language, "vase")}</button>
+                  <button type="button" role="tab" aria-selected={vesselCategory === "bouquet"} className={vesselCategory === "bouquet" ? "vessel-tab active" : "vessel-tab"} onClick={() => setVesselCategory("bouquet")}>{t(language, "bouquets")}</button>
+                  <button type="button" role="tab" aria-selected={vesselCategory === "imagination"} className={vesselCategory === "imagination" ? "vessel-tab active" : "vessel-tab"} onClick={() => setVesselCategory("imagination")}>{t(language, "imagination")}</button>
+                </div>
+
+                {vesselCategory === "imagination" ? (
+                  <div className="vessel-options-scroll bouquet-grid">
+                    {BOUQUET_PRESETS.map((preset) => (
+                      <button key={preset.id} type="button" className="bouquet-card" onClick={() => applyBouquetPreset(preset)}>
+                        <BouquetThumbnail preset={preset} />
+                        <span className="bouquet-card-copy">
+                          <strong>{presetName(language, preset.id as "first-light" | "meadow-air" | "cloud-study")}</strong>
+                          <small>{presetNote(language, preset.id as "first-light" | "meadow-air" | "cloud-study")}</small>
+                        </span>
+                        <span className="bouquet-card-count">{preset.stems.length} {t(language, "stems")}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="vessel-options-scroll vessel-grid">
+                    {VESSEL_OPTIONS.filter((option) => option.category === vesselCategory).map((option) => (
+                      <button
+                        key={option.kind}
+                        type="button"
+                        aria-pressed={vessel === option.kind}
+                        className={vessel === option.kind ? "vessel-card active" : "vessel-card"}
+                        onClick={() => chooseVessel(option.kind)}
+                      >
+                        <VesselThumbnail
+                          option={option}
+                          vesselColor={vessel === option.kind ? vesselColor : getDefaultVesselColor(option.kind)}
+                          vesselOpacity={vessel === option.kind ? vesselOpacity : 100}
+                        />
+                        <strong>{vesselName(language, option.kind)}</strong>
+                        <small>{vesselNote(language, option.kind)}</small>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* 容器外观与旋转调整 */}
+                <div className="vessel-adjust-embedded">
+                  <div className="vessel-rotate-guide">
+                    <p className="vessel-rotate-hint">{t(language, "rotateHint")}</p>
+                    {(bouquetRotation.x !== 0 || bouquetRotation.y !== 0 || bouquetRotation.z !== 0) && (
+                      <button
+                        type="button"
+                        className="vessel-rotation-reset"
+                        onClick={() => {
+                          checkpoint();
+                          setBouquetRotation({ ...DEFAULT_BOUQUET_ROTATION });
+                        }}
+                      >
+                        <RotateCcw size={12} />
+                        <span>{t(language, "resetRotation")}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {vessel !== "naked" && (
+                    <div className="vessel-appearance">
+                      <span className="vessel-appearance-title">{t(language, "containerColor")}</span>
+                      <div className="color-options" role="group" aria-label={t(language, "containerColor")}>
+                        {getVesselColors(vessel).map((option) => (
+                          <button
+                            key={option.color}
+                            type="button"
+                            className="color-option"
+                            style={{ "--petal-color": option.color } as React.CSSProperties}
+                            aria-label={colorName(language, option.label)}
+                            aria-pressed={vesselColor === option.color}
+                            title={colorName(language, option.label)}
+                            onClick={() => chooseVesselColor(option.color)}
+                          >
+                            <span />
+                          </button>
+                        ))}
+                      </div>
+                      <label htmlFor="vessel-opacity">
+                        <span>{t(language, "opacity")}</span>
+                        <output>{vesselOpacity}%</output>
+                      </label>
+                      <input
+                        id="vessel-opacity"
+                        className="range"
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={vesselOpacity}
+                        aria-label={t(language, "opacity")}
+                        onPointerDown={checkpoint}
+                        onKeyDown={(event) => {
+                          if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) checkpoint();
+                        }}
+                        onChange={(event) => setVesselOpacity(Number(event.target.value))}
+                      />
+                      <label htmlFor="vessel-size">
+                        <span>{t(language, "containerSize")}</span>
+                        <output>{Math.round(vesselScale * 100)}%</output>
+                      </label>
+                      <input
+                        id="vessel-size"
+                        className="range"
+                        type="range"
+                        min="70"
+                        max="130"
+                        step="1"
+                        value={Math.round(vesselScale * 100)}
+                        aria-label={t(language, "containerSize")}
+                        onPointerDown={checkpoint}
+                        onKeyDown={(event) => {
+                          if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) checkpoint();
+                        }}
+                        onChange={(event) => setVesselScale(Number(event.target.value) / 100)}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 4. 环境音 */}
+              <div className="drawer-pane" style={{ display: activeDrawer === "sound" ? "block" : "none" }}>
+                <AmbientSoundPanel language={language} />
               </div>
             </div>
-            <div className="light-adjustments">
-              <label className="light-control" htmlFor="light-warmth">
-                <span>{t(language, "warmth")}</span><output>{lightWarmth === 0 ? t(language, "balanced") : lightWarmth > 0 ? `+${lightWarmth}` : lightWarmth}</output>
-              </label>
-              <input id="light-warmth" className="range" type="range" min="-100" max="100" value={lightWarmth}
-                aria-label={t(language, "warmth")} onChange={(event) => setLightWarmth(Number(event.target.value))} />
-              <div className="light-scale"><span>{t(language, "cool")}</span><span>{t(language, "warm")}</span></div>
-              <label className="light-control" htmlFor="light-direction">
-                <span>{t(language, "direction")}</span><output>{lightDirection}°</output>
-              </label>
-              <input id="light-direction" className="range" type="range" min="-180" max="180" value={lightDirection}
-                aria-label={t(language, "direction")} onChange={(event) => setLightDirection(Number(event.target.value))} />
-              <div className="light-scale"><span>{t(language, "turnLeft")}</span><span>{t(language, "turnRight")}</span></div>
-            </div>
-          </div>
-
-          <div className="tool-section">
-            <div className="tool-label">
-              <span>{t(language, "wind")}</span>
-              <Wind size={13} strokeWidth={1.4} />
-            </div>
-            <input
-              className="range"
-              type="range"
-              min="0"
-              max="100"
-              value={Math.round(wind * 100)}
-              aria-label={t(language, "windStrength")}
-              onChange={(event) =>
-                setWind(Number(event.target.value) / 100)
-              }
-            />
-          </div>
-
-          <AmbientSoundPanel language={language} />
-        </aside>
+          </aside>
+        </div>
 
         {selectedStem ? <StemAdjustmentControls
           stem={selectedStem}
