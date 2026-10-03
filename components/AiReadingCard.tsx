@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Sparkles, Copy, Check, Download, RotateCcw, AlertCircle, Loader2 } from "lucide-react";
 import { t, type Language } from "@/lib/translations";
-import type { AiReading, BouquetDataInput } from "@/lib/ai-reading";
+import { getReadingDisplayContent, type AiReading, type BouquetDataInput } from "@/lib/ai-reading";
 
 type Props = {
   language: Language;
@@ -159,7 +159,8 @@ export default function AiReadingCard({
 
   const handleCopyText = async () => {
     if (!reading) return;
-    const text = `【${reading.title}】\n\n${reading.composition}\n\n${reading.reflection}\n\n—— “${reading.quote}”\n（Bloomroom · ${t(language, "aiReading")}）`;
+    const { title, reading: readingContent, punchline } = getReadingDisplayContent(reading);
+    const text = `【${title}】\n\n${readingContent}\n\n—— “${punchline}”\n（Bloomroom · ${t(language, "aiReading")}）`;
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -177,6 +178,7 @@ export default function AiReadingCard({
     setSavingCard(true);
 
     try {
+      const { title, reading: readingContent, punchline } = getReadingDisplayContent(reading);
       const width = 800;
       const height = 1120;
       const canvas = document.createElement("canvas");
@@ -230,7 +232,7 @@ export default function AiReadingCard({
           ctx.roundRect(thumbX, thumbY, thumbW, thumbH, 12);
           ctx.stroke();
 
-          contentStartY = 400;
+          contentStartY = 405;
         } catch {
           contentStartY = 160;
         }
@@ -240,21 +242,23 @@ export default function AiReadingCard({
 
       // Title (Georgia serif)
       ctx.fillStyle = "#22231f";
-      ctx.font = "bold 30px Georgia, serif";
+      ctx.font = "bold 28px Georgia, serif";
       ctx.textAlign = "center";
-      ctx.fillText(reading.title, width / 2, contentStartY);
+      ctx.fillText(title, width / 2, contentStartY);
 
-      // Quote banner
+      // Punchline pill banner
       const quoteY = contentStartY + 50;
-      ctx.fillStyle = "rgba(71, 84, 67, 0.06)";
-      ctx.beginPath();
-      ctx.roundRect(width / 2 - 260, quoteY - 24, 520, 44, 22);
-      ctx.fill();
+      if (punchline) {
+        ctx.fillStyle = "rgba(71, 84, 67, 0.07)";
+        ctx.beginPath();
+        ctx.roundRect(width / 2 - 270, quoteY - 24, 540, 48, 24);
+        ctx.fill();
 
-      ctx.fillStyle = "#475443";
-      ctx.font = "italic 16px Georgia, serif";
-      ctx.textAlign = "center";
-      ctx.fillText(`“${reading.quote}”`, width / 2, quoteY + 4);
+        ctx.fillStyle = "#3b4837";
+        ctx.font = "italic 16px Georgia, serif";
+        ctx.textAlign = "center";
+        ctx.fillText(`“${punchline}”`, width / 2, quoteY + 6);
+      }
 
       // Helper function to draw wrapped text
       const drawWrappedText = (
@@ -265,46 +269,40 @@ export default function AiReadingCard({
         lineHeight: number,
       ): number => {
         let curY = y;
-        let line = "";
-        for (let i = 0; i < text.length; i++) {
-          const testLine = line + text[i];
-          const metrics = ctx.measureText(testLine);
-          if (metrics.width > maxWidth && line.length > 0) {
-            ctx.fillText(line, x, curY);
-            line = text[i];
-            curY += lineHeight;
-          } else {
-            line = testLine;
+        const paragraphs = text.split("\n");
+        for (const p of paragraphs) {
+          if (!p.trim()) {
+            curY += lineHeight * 0.6;
+            continue;
           }
-        }
-        if (line) {
-          ctx.fillText(line, x, curY);
-          curY += lineHeight;
+          let line = "";
+          for (let i = 0; i < p.length; i++) {
+            const testLine = line + p[i];
+            const metrics = ctx.measureText(testLine);
+            if (metrics.width > maxWidth && line.length > 0) {
+              ctx.fillText(line, x, curY);
+              line = p[i];
+              curY += lineHeight;
+            } else {
+              line = testLine;
+            }
+          }
+          if (line) {
+            ctx.fillText(line, x, curY);
+            curY += lineHeight;
+          }
         }
         return curY;
       };
 
-      // Composition text
+      // Reading text
       ctx.textAlign = "left";
       ctx.fillStyle = "#3d3c37";
-      ctx.font = "14px/1.8 -apple-system, BlinkMacSystemFont, sans-serif";
-      const compStartY = quoteY + 60;
-      const compEndY = drawWrappedText(reading.composition, 110, compStartY, 580, 26);
+      ctx.font = "14px/1.85 -apple-system, BlinkMacSystemFont, sans-serif";
+      const readingStartY = punchline ? quoteY + 68 : contentStartY + 50;
+      drawWrappedText(readingContent, 110, readingStartY, 580, 27);
 
-      // Subtle divider line
-      const divY = compEndY + 18;
-      ctx.strokeStyle = "rgba(0, 0, 0, 0.08)";
-      ctx.beginPath();
-      ctx.moveTo(width / 2 - 40, divY);
-      ctx.lineTo(width / 2 + 40, divY);
-      ctx.stroke();
-
-      // Reflection text
-      ctx.fillStyle = "#5a5852";
-      ctx.font = "14px/1.8 -apple-system, BlinkMacSystemFont, sans-serif";
-      drawWrappedText(reading.reflection, 110, divY + 34, 580, 26);
-
-      // Footer disclaimer
+      // Footer disclaimer (统一注明“创作式心理联想”)
       ctx.textAlign = "center";
       ctx.fillStyle = "#8a867c";
       ctx.font = "12px -apple-system, BlinkMacSystemFont, sans-serif";
@@ -352,6 +350,7 @@ export default function AiReadingCard({
   };
 
   const isOutdated = reading && reading.fingerprint !== currentFingerprint;
+  const displayData = reading ? getReadingDisplayContent(reading) : null;
 
   return (
     <div className="ai-reading-section">
@@ -397,7 +396,7 @@ export default function AiReadingCard({
         </div>
       )}
 
-      {reading && !generating && (
+      {reading && displayData && !generating && (
         <div className="ai-reading-card">
           {isOutdated && (
             <div className="ai-reading-outdated-badge">
@@ -414,22 +413,20 @@ export default function AiReadingCard({
           )}
 
           <div className="ai-reading-body">
-            <h4 className="ai-reading-card-title">{reading.title}</h4>
+            <h4 className="ai-reading-card-title">{displayData.title}</h4>
 
-            <div className="ai-reading-quote-pill">
-              <span className="quote-mark">“</span>
-              <span className="quote-text">{reading.quote}</span>
-              <span className="quote-mark">”</span>
-            </div>
-
-            <div className="ai-reading-item">
-              <span className="ai-reading-item-label">{t(language, "readingComposition")}</span>
-              <p className="ai-reading-item-desc">{reading.composition}</p>
-            </div>
+            {displayData.punchline && (
+              <div className="ai-reading-quote-pill">
+                <span className="quote-mark">“</span>
+                <span className="quote-text">{displayData.punchline}</span>
+                <span className="quote-mark">”</span>
+              </div>
+            )}
 
             <div className="ai-reading-item">
-              <span className="ai-reading-item-label">{t(language, "readingReflection")}</span>
-              <p className="ai-reading-item-desc">{reading.reflection}</p>
+              <p className="ai-reading-item-desc" style={{ whiteSpace: "pre-line" }}>
+                {displayData.reading}
+              </p>
             </div>
           </div>
 
