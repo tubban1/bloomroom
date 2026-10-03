@@ -2068,7 +2068,6 @@ export default function FlowerStudio() {
   const [activeDrawer, setActiveDrawer] = useState<StudioDrawer | null>(() => (
     typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches ? "flowers" : "scene"
   ));
-  const [fineTuneLightOpen, setFineTuneLightOpen] = useState(true);
   const [vesselCategory, setVesselCategory] = useState<"vase" | "bouquet" | "imagination">(() => (
     VESSEL_OPTIONS.find((option) => option.kind === initialVessel)?.category ?? "vase"
   ));
@@ -3436,59 +3435,6 @@ export default function FlowerStudio() {
                     </button>
                   </div>
                 </div>
-                <details
-                  className="light-fine-tuning"
-                  open={fineTuneLightOpen}
-                  onToggle={(e) => setFineTuneLightOpen(e.currentTarget.open)}
-                >
-                  <summary>{t(language, "fineTuneLight")}</summary>
-                  <div className="tool-section">
-                    <label className="light-control" htmlFor="light-warmth">
-                      <span>{t(language, "warmth")}</span>
-                      <output>{lightWarmth === 0 ? t(language, "balanced") : lightWarmth > 0 ? `+${lightWarmth}` : lightWarmth}</output>
-                    </label>
-                    <input
-                      id="light-warmth"
-                      className="range"
-                      type="range"
-                      min="-100"
-                      max="100"
-                      value={lightWarmth}
-                      aria-label={t(language, "warmth")}
-                      onPointerDown={checkpoint}
-                      onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) checkpoint(); }}
-                      onChange={(event) => setLightWarmth(Number(event.target.value))}
-                    />
-                    <div className="light-scale">
-                      <span>{t(language, "cool")}</span>
-                      <span>{t(language, "warm")}</span>
-                    </div>
-                  </div>
-
-                  <div className="tool-section">
-                    <label className="light-control" htmlFor="light-direction">
-                      <span>{t(language, "direction")}</span>
-                      <output>{lightDirection}°</output>
-                    </label>
-                    <input
-                      id="light-direction"
-                      className="range"
-                      type="range"
-                      min="-180"
-                      max="180"
-                      value={lightDirection}
-                      aria-label={t(language, "direction")}
-                      onPointerDown={checkpoint}
-                      onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) checkpoint(); }}
-                      onChange={(event) => setLightDirection(Number(event.target.value))}
-                    />
-                    <div className="light-scale">
-                      <span>{t(language, "turnLeft")}</span>
-                      <span>{t(language, "turnRight")}</span>
-                    </div>
-                  </div>
-
-                </details>
               </div>
 
               {/* 2. 花材 */}
