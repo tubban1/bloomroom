@@ -10,6 +10,7 @@ import { ContactShadows, OrthographicCamera, useProgress } from "@react-three/dr
 import {
   Bookmark,
   Check,
+  Compass,
   Copy,
   Download,
   LogOut,
@@ -25,6 +26,7 @@ import {
 } from "lucide-react";
 import AuthModal from "./AuthModal";
 import GardenModal from "./GardenModal";
+import GalleryModal from "./GalleryModal";
 import VoiceRecorder from "./VoiceRecorder";
 import AiReadingCard from "./AiReadingCard";
 import { computeBouquetFingerprint, type AiReading } from "@/lib/ai-reading";
@@ -1994,6 +1996,10 @@ export default function FlowerStudio() {
   const [activeDraftVersion, setActiveDraftVersion] = useState<number>(1);
   const [activeDraftTitle, setActiveDraftTitle] = useState<string>("");
   const [currentAiReading, setCurrentAiReading] = useState<AiReading | null>(null);
+  const [galleryModalOpen, setGalleryModalOpen] = useState(false);
+  const [creationVisibility, setCreationVisibility] = useState<"public" | "private">("public");
+  const [activeCreationId, setActiveCreationId] = useState<string | null>(null);
+  const [savingCreation, setSavingCreation] = useState(false);
 
   const bouquetDataObj = useMemo(
     () =>
@@ -2048,6 +2054,21 @@ export default function FlowerStudio() {
   const finishOverlayRef = useRef<HTMLDivElement>(null);
   const paletteDrag = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   const suppressClick = useRef(false);
+  useEffect(() => {
+    try {
+      const payloadStr = sessionStorage.getItem("bloomroom_remix_payload");
+      if (payloadStr) {
+        sessionStorage.removeItem("bloomroom_remix_payload");
+        const payload = JSON.parse(payloadStr);
+        const bouquetObj = payload?.bouquet || payload?.bouquetData;
+        if (bouquetObj) {
+          handleRemixCreation(bouquetObj, payload?.title);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to restore remixed bouquet from session storage", e);
+    }
+  }, []);
   useEffect(() => { window.localStorage.setItem("bloomroom-language", language); }, [language]);
   useEffect(() => {
     const query = window.matchMedia("(max-width: 760px), (pointer: coarse)");
@@ -2575,7 +2596,43 @@ export default function FlowerStudio() {
 
     setActiveDraftId(null);
     setActiveDraftVersion(1);
+    setActiveCreationId(null);
     setActiveDraftTitle(toName ? `${toName} · ${t(language, "remixCopy")}` : t(language, "untitledBouquet"));
+    setSelectedId(null);
+    setHeld(null);
+    setToast(t(language, "restored"));
+  };
+
+  const handleRemixCreation = (bouquetData: unknown, originalTitle?: string) => {
+    let parsed: any = null;
+    if (typeof bouquetData === "string") {
+      try {
+        parsed = JSON.parse(bouquetData);
+      } catch {
+        parsed = decodeBouquet(bouquetData);
+      }
+    } else if (typeof bouquetData === "object" && bouquetData !== null) {
+      parsed = bouquetData;
+    }
+
+    if (!parsed || !Array.isArray(parsed.stems)) return;
+
+    checkpoint();
+    setStems(parsed.stems);
+    if (parsed.rotation) setBouquetRotation(parsed.rotation);
+    if (parsed.vessel) setVessel(parsed.vessel);
+    if (parsed.vesselColor) setVesselColor(parsed.vesselColor);
+    if (parsed.vesselOpacity !== undefined) setVesselOpacity(parsed.vesselOpacity);
+    if (parsed.vesselScale !== undefined) setVesselScale(parsed.vesselScale);
+    if (parsed.backdrop) setBackdrop(parsed.backdrop);
+    if (parsed.lightWarmth !== undefined) setLightWarmth(parsed.lightWarmth);
+    if (parsed.lightDirection !== undefined) setLightDirection(parsed.lightDirection);
+    if (parsed.wind !== undefined) setWind(parsed.wind);
+
+    setActiveDraftId(null);
+    setActiveDraftVersion(1);
+    setActiveCreationId(null);
+    setActiveDraftTitle(originalTitle ? `${originalTitle} · ${t(language, "remixCopy")}` : t(language, "untitledBouquet"));
     setSelectedId(null);
     setHeld(null);
     setToast(t(language, "restored"));
@@ -2599,6 +2656,7 @@ export default function FlowerStudio() {
     setActiveDraftId(null);
     setActiveDraftVersion(1);
     setActiveDraftTitle("");
+    setActiveCreationId(null);
     setVoiceBlob(null);
     setVoiceDurationMs(0);
     window.localStorage.removeItem("bloomroom_pending_draft");
@@ -2654,6 +2712,7 @@ export default function FlowerStudio() {
       setShareUrl(null);
       setPostcardRender(null);
       setShareError("");
+      setCreationVisibility("public");
       setMobilePostcardOpen(false);
       setFinishOpen(true);
     }));
@@ -2682,6 +2741,11 @@ export default function FlowerStudio() {
       formData.append("to", recipient);
       formData.append("message", giftMessage);
       formData.append("from", sender);
+      formData.append("visibility", user ? creationVisibility : "public");
+      formData.append("title", activeDraftTitle || "");
+      if (activeCreationId) {
+        formData.append("creation_id", activeCreationId);
+      }
 
       // Convert finishImage dataURL to Blob for efficient FormData transfer
       if (finishImage.startsWith("data:image/")) {
@@ -2704,14 +2768,53 @@ export default function FlowerStudio() {
         method: "POST",
         body: formData,
       });
-      const result = (await response.json()) as { path?: string; error?: string };
+      const result = (await response.json()) as { path?: string; id?: string; creation_id?: string; error?: string };
       if (!response.ok || !result.path) throw new Error(result.error || t(language, "savingError"));
+      if (result.creation_id) {
+        setActiveCreationId(result.creation_id);
+      }
       setShareUrl(`https://flower.fde.fan${result.path}?lang=${language}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t(language, "savingError");
       setShareError(msg || t(language, "savingError"));
     } finally {
       setPublishing(false);
+    }
+  };
+
+  const handleSaveCreation = async () => {
+    if (!finishImage || savingCreation) return;
+    setSavingCreation(true);
+    try {
+      const formData = new FormData();
+      formData.append("bouquet_data", JSON.stringify(bouquetDataObj));
+      formData.append("title", activeDraftTitle || "");
+      formData.append("visibility", user ? creationVisibility : "public");
+      if (activeDraftId) {
+        formData.append("source_draft_id", activeDraftId);
+      }
+
+      if (finishImage.startsWith("data:image/")) {
+        const bin = atob(finishImage.split(",")[1]);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const imageBlob = new Blob([bytes], { type: "image/jpeg" });
+        formData.append("image", imageBlob, "preview.jpg");
+      }
+
+      const res = await fetch("/api/creations", {
+        method: "POST",
+        body: formData,
+      });
+      const data = (await res.json()) as { creation?: { id: string }; error?: string };
+      if (!res.ok || !data.creation) throw new Error(data.error || t(language, "savingError"));
+      setActiveCreationId(data.creation.id);
+      setToast(t(language, "savedToGallery"));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t(language, "savingError");
+      setToast(msg);
+    } finally {
+      setSavingCreation(false);
     }
   };
 
@@ -2808,6 +2911,16 @@ export default function FlowerStudio() {
             onClick={startOver}
           >
             <RotateCcw size={15} strokeWidth={1.5} />
+          </button>
+          <button
+            className="gallery-nav-button"
+            type="button"
+            aria-label={t(language, "gallery")}
+            title={t(language, "gallery")}
+            onClick={() => setGalleryModalOpen(true)}
+          >
+            <Compass size={14} />
+            <span>{t(language, "gallery")}</span>
           </button>
           <button
             className="save-draft-button"
@@ -3361,9 +3474,51 @@ export default function FlowerStudio() {
               </div>}
               {shareError && <p className="share-error" role="alert">{shareError}</p>}
 
+              <div className="finish-visibility-banner">
+                <div className="finish-visibility-info">
+                  <Compass size={14} className="finish-visibility-icon" />
+                  <span className="finish-visibility-text">
+                    {creationVisibility === "public"
+                      ? t(language, "galleryNotice")
+                      : t(language, "galleryNoticePrivate")}
+                  </span>
+                </div>
+                {user ? (
+                  <div className="visibility-switch" role="radiogroup" aria-label={t(language, "visibilityLabel")}>
+                    <button
+                      type="button"
+                      className={`visibility-opt ${creationVisibility === "public" ? "active" : ""}`}
+                      onClick={() => setCreationVisibility("public")}
+                    >
+                      {t(language, "publicBadge")}
+                    </button>
+                    <button
+                      type="button"
+                      className={`visibility-opt ${creationVisibility === "private" ? "active" : ""}`}
+                      onClick={() => setCreationVisibility("private")}
+                    >
+                      {t(language, "privateBadge")}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+
               <div className="finish-actions">
                 <button type="button" className="primary" onClick={savePostcard} disabled={!postcardImage}>
                   <Download size={13} /> {mobileSave ? t(language, "saveToPhotos") : t(language, "download")}
+                </button>
+                <button
+                  type="button"
+                  className="save-creation-btn"
+                  onClick={handleSaveCreation}
+                  disabled={savingCreation || !!activeCreationId}
+                >
+                  <Compass size={13} />
+                  {activeCreationId
+                    ? t(language, "saved")
+                    : savingCreation
+                      ? t(language, "savingToGallery")
+                      : t(language, "saveToGallery")}
                 </button>
                 <button type="button" onClick={createShareLink} disabled={publishing || !finishImage}>
                   {publishing ? t(language, "creating") : shareUrl ? t(language, "createAnother") : t(language, "createLink")}
@@ -3407,6 +3562,15 @@ export default function FlowerStudio() {
         onClose={() => setGardenModalOpen(false)}
         onLoadDraft={handleLoadDraft}
         onRemixPostcard={handleRemixPostcard}
+        onRemixCreation={handleRemixCreation}
+      />
+
+      <GalleryModal
+        isOpen={galleryModalOpen}
+        language={language}
+        currentUser={user}
+        onClose={() => setGalleryModalOpen(false)}
+        onRemixCreation={handleRemixCreation}
       />
 
       <a className="model-credits" href="/models/credits.html" target="_blank" rel="noreferrer">{t(language, "credits")} ↗</a>

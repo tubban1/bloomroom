@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { X, Sparkles, Send, Trash2, Edit3, ArrowRight, ExternalLink, Flower2 } from "lucide-react";
+import { X, Sparkles, Send, Trash2, Edit3, ArrowRight, ExternalLink, Flower2, Heart } from "lucide-react";
 import type { DraftSummary, SentPostcardSummary } from "@/lib/drafts";
 import type { SafeUser } from "@/lib/auth";
 import { t, type Language } from "@/lib/translations";
@@ -13,6 +13,7 @@ type Props = {
   user: SafeUser | null;
   onLoadDraft: (draftId: string) => void;
   onRemixPostcard: (bouquetString: string, toName: string) => void;
+  onRemixCreation?: (bouquetData: Record<string, unknown>, title: string) => void;
   onDraftDeleted?: (draftId: string) => void;
 };
 
@@ -23,24 +24,42 @@ export default function GardenModal({
   user,
   onLoadDraft,
   onRemixPostcard,
+  onRemixCreation,
   onDraftDeleted,
 }: Props) {
-  const [tab, setTab] = useState<"drafts" | "postcards">("drafts");
+  const [tab, setTab] = useState<"drafts" | "creations" | "postcards">("drafts");
   const [drafts, setDrafts] = useState<DraftSummary[]>([]);
   const [postcards, setPostcards] = useState<SentPostcardSummary[]>([]);
+  const [creations, setCreations] = useState<Array<{
+    id: string;
+    title: string;
+    visibility: "public" | "private";
+    like_count: number;
+    published_at: string;
+    image_url: string;
+  }>>([]);
   const [loading, setLoading] = useState(false);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
+  const [editingCreationId, setEditingCreationId] = useState<string | null>(null);
+  const [editCreationTitle, setEditCreationTitle] = useState("");
 
   const fetchLibrary = async () => {
     if (!user) return;
     setLoading(true);
     try {
-      const res = await fetch("/api/user/library", { cache: "no-store" });
-      if (res.ok) {
-        const data = (await res.json()) as { drafts: DraftSummary[]; postcards: SentPostcardSummary[] };
+      const [libRes, creationsRes] = await Promise.all([
+        fetch("/api/user/library", { cache: "no-store" }),
+        fetch("/api/user/creations", { cache: "no-store" }),
+      ]);
+      if (libRes.ok) {
+        const data = (await libRes.json()) as { drafts: DraftSummary[]; postcards: SentPostcardSummary[] };
         setDrafts(data.drafts || []);
         setPostcards(data.postcards || []);
+      }
+      if (creationsRes.ok) {
+        const data = (await creationsRes.json()) as { creations: typeof creations };
+        setCreations(data.creations || []);
       }
     } catch {
       // Gracefully handle network errors
@@ -102,6 +121,77 @@ export default function GardenModal({
     }
   };
 
+  const handleToggleVisibility = async (creationId: string, currentVis: "public" | "private") => {
+    const nextVis = currentVis === "public" ? "private" : "public";
+    setCreations((prev) =>
+      prev.map((c) => (c.id === creationId ? { ...c, visibility: nextVis } : c)),
+    );
+
+    try {
+      const res = await fetch(`/api/creations/${creationId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visibility: nextVis }),
+      });
+      if (!res.ok) throw new Error("Failed to update visibility");
+    } catch {
+      setCreations((prev) =>
+        prev.map((c) => (c.id === creationId ? { ...c, visibility: currentVis } : c)),
+      );
+    }
+  };
+
+  const handleDeleteCreation = async (creationId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm(t(language, "confirmDeleteCreation"))) return;
+
+    try {
+      const res = await fetch(`/api/creations/${creationId}`, { method: "DELETE" });
+      if (res.ok) {
+        setCreations((prev) => prev.filter((c) => c.id !== creationId));
+      }
+    } catch {
+      // Ignored
+    }
+  };
+
+  const handleSaveCreationRename = async (creation: { id: string }, e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const clean = editCreationTitle.trim();
+    if (!clean) return;
+
+    try {
+      const res = await fetch(`/api/creations/${creation.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: clean }),
+      });
+      if (res.ok) {
+        setCreations((prev) =>
+          prev.map((c) => (c.id === creation.id ? { ...c, title: clean } : c)),
+        );
+      }
+    } catch {
+      // Ignored
+    } finally {
+      setEditingCreationId(null);
+    }
+  };
+
+  const handleRemixCreationItem = async (creationId: string, title: string) => {
+    try {
+      const res = await fetch(`/api/creations/${creationId}`);
+      if (res.ok) {
+        const data = (await res.json()) as { creation: { bouquet_data: Record<string, unknown> } };
+        onRemixCreation?.(data.creation.bouquet_data, title);
+        onClose();
+      }
+    } catch {
+      // Ignored
+    }
+  };
+
   const formatDate = (isoStr: string) => {
     try {
       const date = new Date(isoStr);
@@ -144,6 +234,13 @@ export default function GardenModal({
             onClick={() => setTab("drafts")}
           >
             {t(language, "drafts")} ({drafts.length})
+          </button>
+          <button
+            type="button"
+            className={`garden-tab ${tab === "creations" ? "active" : ""}`}
+            onClick={() => setTab("creations")}
+          >
+            {t(language, "myCreations")} ({creations.length})
           </button>
           <button
             type="button"
@@ -217,6 +314,104 @@ export default function GardenModal({
                           type="button"
                           className="garden-action-danger"
                           onClick={(e) => handleDeleteDraft(draft.id, e)}
+                          title={t(language, "deleteAction")}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )
+          ) : tab === "creations" ? (
+            creations.length === 0 ? (
+              <div className="garden-empty-state">
+                <Flower2 size={36} className="garden-empty-icon" />
+                <p>{t(language, "noCreations")}</p>
+              </div>
+            ) : (
+              <div className="garden-grid">
+                {creations.map((c) => (
+                  <article key={c.id} className="garden-card creation-card">
+                    <div
+                      className="garden-card-preview"
+                      onClick={() => handleRemixCreationItem(c.id, c.title)}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={c.image_url} alt={c.title} />
+                      <div className="garden-card-tag-row">
+                        <span className={`garden-vis-pill ${c.visibility}`}>
+                          {c.visibility === "public" ? t(language, "publicBadge") : t(language, "privateBadge")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="garden-card-body">
+                      {editingCreationId === c.id ? (
+                        <form
+                          onSubmit={(e) => handleSaveCreationRename(c, e)}
+                          className="garden-rename-form"
+                        >
+                          <input
+                            type="text"
+                            value={editCreationTitle}
+                            onChange={(e) => setEditCreationTitle(e.target.value)}
+                            autoFocus
+                            maxLength={64}
+                          />
+                          <button type="submit" className="garden-rename-save">✓</button>
+                        </form>
+                      ) : (
+                        <div className="garden-title-row">
+                          <h3 title={c.title}>{c.title}</h3>
+                          <button
+                            type="button"
+                            className="garden-icon-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCreationId(c.id);
+                              setEditCreationTitle(c.title);
+                            }}
+                            title={t(language, "rename")}
+                          >
+                            <Edit3 size={13} />
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="garden-creation-meta-row">
+                        <span className="garden-card-date">{formatDate(c.published_at)}</span>
+                        {c.like_count > 0 && (
+                          <span className="garden-creation-likes">
+                            <Heart size={12} fill="#e25555" color="#e25555" />
+                            {c.like_count}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="garden-card-actions">
+                        <button
+                          type="button"
+                          className="garden-action-vis-toggle"
+                          onClick={() => handleToggleVisibility(c.id, c.visibility)}
+                          title={c.visibility === "public" ? t(language, "setPrivate") : t(language, "setPublic")}
+                        >
+                          {c.visibility === "public" ? t(language, "setPrivate") : t(language, "setPublic")}
+                        </button>
+                        <button
+                          type="button"
+                          className="garden-action-primary"
+                          onClick={() => handleRemixCreationItem(c.id, c.title)}
+                          title={t(language, "remixCopy")}
+                        >
+                          <span>{t(language, "remixCopy")}</span>
+                          <ArrowRight size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          className="garden-action-delete"
+                          onClick={(e) => handleDeleteCreation(c.id, e)}
                           title={t(language, "deleteAction")}
                         >
                           <Trash2 size={13} />

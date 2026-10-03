@@ -14,6 +14,7 @@ export type Postcard = {
   audio_size_bytes?: number | null;
   created_at: Date;
   user_id?: string | null;
+  creation_id?: string | null;
 };
 
 export async function createPostcard(
@@ -30,6 +31,7 @@ export async function createPostcard(
     audio_duration_ms?: number | null;
     audio_size_bytes?: number | null;
     user_id?: string | null;
+    creation_id?: string | null;
   },
 ) {
   const db = getDatabasePool();
@@ -38,8 +40,8 @@ export async function createPostcard(
        id, bouquet, to_name, message, from_name,
        image_base64, image_path,
        audio_path, audio_mime, audio_duration_ms, audio_size_bytes,
-       user_id
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+       user_id, creation_id
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
     [
       postcard.id,
       postcard.bouquet,
@@ -53,6 +55,7 @@ export async function createPostcard(
       postcard.audio_duration_ms || null,
       postcard.audio_size_bytes || null,
       postcard.user_id || null,
+      postcard.creation_id || null,
     ],
   );
 }

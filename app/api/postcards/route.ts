@@ -45,6 +45,9 @@ export async function POST(request: Request) {
       const to = String(formData.get("to") || "").trim();
       const message = String(formData.get("message") || "").trim();
       const from = String(formData.get("from") || "").trim();
+      const existingCreationId = String(formData.get("creation_id") || "").trim() || null;
+      const visibilityParam = String(formData.get("visibility") || "public").trim();
+      const bouquetTitle = String(formData.get("title") || "").trim();
 
       if (!/^[A-Za-z0-9_-]{1,12000}$/.test(bouquet)) {
         return Response.json({ error: "Invalid bouquet data." }, { status: 400 });
@@ -161,6 +164,33 @@ export async function POST(request: Request) {
         }
       }
 
+      // 3.5 Link or auto-create gallery creation
+      let creationId: string | null = existingCreationId;
+      if (!creationId) {
+        try {
+          const { createCreation } = await import("@/lib/creations");
+          let bouquetJson: Record<string, unknown> = {};
+          try {
+            let normalized = bouquet.replaceAll("-", "+").replaceAll("_", "/");
+            while (normalized.length % 4) normalized += "=";
+            bouquetJson = JSON.parse(decodeURIComponent(Buffer.from(normalized, "base64").toString("utf-8")));
+          } catch {
+            bouquetJson = { raw: bouquet };
+          }
+
+          const creation = await createCreation({
+            ownerUserId: userId,
+            title: bouquetTitle || (from ? `${from}的插花` : "未命名花束"),
+            bouquetData: bouquetJson,
+            imageBuffer,
+            visibility: userId ? (visibilityParam === "private" ? "private" : "public") : "public",
+          });
+          creationId = creation.id;
+        } catch (crErr) {
+          console.warn("Could not auto-create gallery creation for postcard:", crErr);
+        }
+      }
+
       // 4. Save to Database
       try {
         await createPostcard({
@@ -176,9 +206,10 @@ export async function POST(request: Request) {
           audio_duration_ms: audioDurationMs,
           audio_size_bytes: audioBuffer ? audioBuffer.length : null,
           user_id: userId,
+          creation_id: creationId,
         });
 
-        return Response.json({ id, path: `/g/${id}` }, { status: 201 });
+        return Response.json({ id, path: `/g/${id}`, creation_id: creationId }, { status: 201 });
       } catch (dbError) {
         console.error("Database save failed, cleaning up storage files", dbError);
         if (uploadedImagePath) await deleteStorageObject(BUCKET_IMAGES, uploadedImagePath);

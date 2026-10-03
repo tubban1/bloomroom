@@ -29,6 +29,16 @@ export async function POST(request: Request) {
       maxAge: SESSION_MAX_AGE_SECONDS,
     });
 
+    const guestId = cookieStore.get("bloomroom_guest_id")?.value;
+    if (guestId) {
+      try {
+        const { mergeGuestLikesIntoUser } = await import("@/lib/creations");
+        await mergeGuestLikesIntoUser(guestId, user.id);
+      } catch (mergeErr) {
+        console.warn("Could not merge guest likes on login:", mergeErr);
+      }
+    }
+
     return Response.json(
       { user },
       {
