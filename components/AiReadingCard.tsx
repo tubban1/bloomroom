@@ -13,7 +13,7 @@ type Props = {
   onReadingChange?: (reading: AiReading | null) => void;
 };
 
-const STORAGE_KEY = "bloomroom_ai_readings";
+const STORAGE_KEY = "bloomroom_ai_readings_v2";
 
 export default function AiReadingCard({
   language,
@@ -37,13 +37,17 @@ export default function AiReadingCard({
   // Load from local storage when fingerprint or language changes
   useEffect(() => {
     try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
+      const stored = window.localStorage.getItem(STORAGE_KEY) || window.localStorage.getItem("bloomroom_ai_readings");
       if (stored) {
         const parsed = JSON.parse(stored) as Record<string, AiReading>;
         const exactKey = `${currentFingerprint}:${language}`;
         if (parsed[exactKey]) {
-          setReading(parsed[exactKey]);
-          onReadingChangeRef.current?.(parsed[exactKey]);
+          const item = parsed[exactKey];
+          if (item.composition && item.reflection && item.composition.trim() === item.reflection.trim()) {
+            item.reflection = "";
+          }
+          setReading(item);
+          onReadingChangeRef.current?.(item);
           setError(null);
           return;
         }
@@ -52,8 +56,12 @@ export default function AiReadingCard({
         const keys = Object.keys(parsed).filter((k) => k.endsWith(`:${language}`));
         if (keys.length > 0) {
           const latestKey = keys[keys.length - 1];
-          setReading(parsed[latestKey]);
-          onReadingChangeRef.current?.(parsed[latestKey]);
+          const item = parsed[latestKey];
+          if (item.composition && item.reflection && item.composition.trim() === item.reflection.trim()) {
+            item.reflection = "";
+          }
+          setReading(item);
+          onReadingChangeRef.current?.(item);
           return;
         }
       }

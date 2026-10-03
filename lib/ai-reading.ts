@@ -49,9 +49,20 @@ export function getReadingDisplayContent(reading: AiReading | null | undefined):
     return { title: "", reading: "", punchline: "" };
   }
   const title = reading.title || "";
-  const displayReading =
-    reading.reading ||
-    [reading.composition, reading.reflection].filter(Boolean).join("\n\n");
+  let displayReading = (reading.reading || "").trim();
+  if (!displayReading) {
+    const comp = (reading.composition || "").trim();
+    const refl = (reading.reflection || "").trim();
+    if (comp && refl) {
+      if (comp === refl) {
+        displayReading = comp;
+      } else {
+        displayReading = `${comp}\n\n${refl}`;
+      }
+    } else {
+      displayReading = comp || refl || "";
+    }
+  }
   const punchline = reading.punchline || reading.quote || "";
   return { title, reading: displayReading, punchline };
 }
@@ -231,8 +242,8 @@ function validateReadingOutput(
     title: title.slice(0, 50),
     reading: reading.slice(0, 600),
     punchline: punchline.slice(0, 120),
-    composition: comp || reading.slice(0, 600),
-    reflection: refl || reading.slice(0, 600),
+    composition: comp,
+    reflection: refl,
     quote: quote || punchline.slice(0, 120),
     fingerprint,
     language,
