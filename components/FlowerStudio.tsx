@@ -33,7 +33,6 @@ import VoiceRecorder from "./VoiceRecorder";
 import AiReadingCard from "./AiReadingCard";
 import { computeBouquetFingerprint, type AiReading } from "@/lib/ai-reading";
 import { createCreationSync } from "@/lib/creation-sync";
-import { botanicalAnchor, firstBotanicalAnchor, resolveBotanicalAnchor, type BotanicalAnchor } from "@/lib/botanical-picking";
 import type { SafeUser } from "@/lib/auth";
 import {
   useEffectEvent,
@@ -883,8 +882,13 @@ function FlowerStem({
   const group = useRef<THREE.Group>(null);
   const importedVisual = useRef<THREE.Group>(null);
   const selectionRing = useRef<THREE.Mesh>(null);
-  const selectionAnchor = useRef<BotanicalAnchor | null>(null);
-  const selectionCache = useRef<{ geometry: THREE.BufferGeometry; point: THREE.Vector3 | null } | null>(null);
+  const selectionBounds = useMemo(() => ({
+    box: new THREE.Box3(),
+    corner: new THREE.Vector3(),
+    center: new THREE.Vector3(),
+    edge: new THREE.Vector3(),
+    rotation: new THREE.Quaternion(),
+  }), []);
   const spec = getSpec(stem.kind);
   const colorOption = getFlowerColor(stem.kind, stem.colorVariant);
   const bloomColor = colorOption?.color ?? spec.color;
@@ -918,20 +922,31 @@ function FlowerStem({
       Math.cos(t * 0.95 + stem.seed * 1.7) * breeze * 0.5;
     if (selected && importedVisual.current && selectionRing.current) {
       importedVisual.current.updateWorldMatrix(true, true);
-      selectionAnchor.current ??= firstBotanicalAnchor(importedVisual.current);
-      const anchor = selectionAnchor.current;
-      const mesh = anchor ? importedVisual.current.getObjectByName(anchor.meshName) : null;
-      let center: THREE.Vector3 | null = null;
-      if (anchor && mesh instanceof THREE.Mesh) {
-        if (selectionCache.current?.geometry !== mesh.geometry) {
-          selectionCache.current = { geometry: mesh.geometry, point: resolveBotanicalAnchor(mesh, anchor) };
+      const { box, corner, center, edge, rotation } = selectionBounds;
+      box.setFromObject(importedVisual.current);
+      selectionRing.current.visible = !box.isEmpty();
+      if (!box.isEmpty()) {
+        box.getCenter(center).project(camera);
+        const depth = center.z;
+        let left = Infinity, right = -Infinity, bottom = Infinity, top = -Infinity;
+        // Project every corner so the outline follows the whole branch at any viewing angle.
+        for (let i = 0; i < 8; i++) {
+          corner.set(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z).project(camera);
+          left = Math.min(left, corner.x);
+          right = Math.max(right, corner.x);
+          bottom = Math.min(bottom, corner.y);
+          top = Math.max(top, corner.y);
         }
-        center = selectionCache.current?.point?.clone().applyMatrix4(mesh.matrixWorld) ?? null;
-      }
-      selectionRing.current.visible = !!center;
-      if (center) {
+        center.set((left + right) / 2, (bottom + top) / 2, depth).unproject(camera);
+        // sqrt(2) encloses the projected rectangle, including leaves at its corners.
+        const padding = Math.SQRT2 * 1.04;
+        edge.set((left + right) / 2 + (right - left) / 2 * padding, (bottom + top) / 2, depth).unproject(camera);
+        const radiusX = Math.max(0.06, edge.distanceTo(center));
+        edge.set((left + right) / 2, (bottom + top) / 2 + (top - bottom) / 2 * padding, depth).unproject(camera);
+        const radiusY = Math.max(0.06, edge.distanceTo(center));
+        selectionRing.current.scale.set(radiusX, radiusY, Math.min(radiusX, radiusY));
         selectionRing.current.position.copy(group.current.worldToLocal(center));
-        selectionRing.current.quaternion.copy(group.current.getWorldQuaternion(new THREE.Quaternion()).invert())
+        selectionRing.current.quaternion.copy(group.current.getWorldQuaternion(rotation).invert())
           .multiply(camera.getWorldQuaternion(new THREE.Quaternion()));
       }
     }
@@ -940,9 +955,6 @@ function FlowerStem({
   const pointerDown = (event: ThreeEvent<PointerEvent>) => {
     if (ghost || event.button !== 0) return;
     event.stopPropagation();
-    selectionAnchor.current = event.object instanceof THREE.Mesh && event.object.userData.botanicalPick && event.face
-      ? botanicalAnchor(event.object, event.point, event.face) : null;
-    selectionCache.current = null;
     onSelect?.(stem.id);
     onDragStart?.(stem.id, event);
   };
@@ -981,7 +993,7 @@ function FlowerStem({
         </group>
       )}
       {selected && !ghost && <mesh ref={selectionRing} visible={false} raycast={() => null} renderOrder={20}>
-        <torusGeometry args={[clamp(visualScale * 0.085, 0.055, 0.12), 0.006, 6, 48]} />
+        <torusGeometry args={[1, 0.003, 6, 80]} />
         <meshBasicMaterial color="#85906d" transparent opacity={0.85} depthTest={false} />
       </mesh>}
     </group>
