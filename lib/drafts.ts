@@ -4,6 +4,7 @@ export type DraftSummary = {
   id: string;
   title: string;
   preview_image: string | null;
+  editable?: boolean;
   version: number;
   created_at: string;
   updated_at: string;
@@ -34,11 +35,14 @@ export async function getUserLibrary(userId: string, limit = 50): Promise<{
       id: string;
       title: string;
       preview_image: string | null;
+      editable: boolean;
       version: number;
       created_at: Date;
       updated_at: Date;
     }>(
-      `SELECT id, title, preview_image, version, created_at, updated_at
+      `SELECT id, title, preview_image, version, created_at, updated_at,
+              COALESCE(jsonb_typeof(bouquet_data->'stems') = 'array'
+                OR jsonb_typeof(bouquet_data) IN ('array', 'string'), false) AS editable
        FROM bloomroom.drafts
        WHERE user_id = $1
        ORDER BY updated_at DESC
@@ -67,6 +71,7 @@ export async function getUserLibrary(userId: string, limit = 50): Promise<{
       id: r.id,
       title: r.title,
       preview_image: r.preview_image,
+      editable: r.editable,
       version: r.version,
       created_at: r.created_at.toISOString(),
       updated_at: r.updated_at.toISOString(),

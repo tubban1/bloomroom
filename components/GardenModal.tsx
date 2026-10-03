@@ -274,7 +274,7 @@ export default function GardenModal({
               <div className="garden-grid">
                 {drafts.map((draft) => (
                   <article key={draft.id} className="garden-card draft-card">
-                    <div className="garden-card-preview" onClick={() => handleLoadDraftItem(draft.id)}>
+                    <div className="garden-card-preview" onClick={draft.editable === false ? undefined : () => handleLoadDraftItem(draft.id)}>
                       {draft.preview_image ? (
                         <img src={draft.preview_image} alt={draft.title} />
                       ) : (
@@ -285,15 +285,16 @@ export default function GardenModal({
                     </div>
                     <div className="garden-card-body">
                       <span className="garden-card-date">{formatDate(draft.updated_at)}</span>
+                      {draft.editable === false && <p>{t(language, "draftDataMissing")}</p>}
                       <div className="garden-card-actions">
-                        <button
+                        {draft.editable !== false && <button
                           type="button"
                           className="garden-action-primary"
                           onClick={() => handleLoadDraftItem(draft.id)}
                         >
                           <span>{t(language, "continueEdit")}</span>
                           <ArrowRight size={13} />
-                        </button>
+                        </button>}
                         <button
                           type="button"
                           className="garden-action-danger"
