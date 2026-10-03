@@ -204,6 +204,7 @@ type StudioSnapshot = {
   backdrop: BackdropKind;
   lightWarmth: number;
   lightDirection: number;
+  activeLightPreset?: LightPresetKind | null;
 };
 
 const DEFAULT_BOUQUET_ROTATION: BouquetRotation = { x: 0, y: 0, z: 0 };
@@ -2075,6 +2076,7 @@ export default function FlowerStudio() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [initialLightPreset] = useState(getRandomLightPreset);
+  const [activeLightPreset, setActiveLightPreset] = useState<LightPresetKind | null>(initialLightPreset.id);
   const [lightWarmth, setLightWarmth] = useState(initialLightPreset.warmth);
   const [lightDirection, setLightDirection] = useState(initialLightPreset.direction);
   const [backdrop, setBackdrop] = useState<BackdropKind>(getRandomBackdrop);
@@ -2209,14 +2211,14 @@ export default function FlowerStudio() {
     window.localStorage.setItem("bloomroom-language", next);
   };
   const checkpoint = useCallback(() => {
-    past.current = [...past.current.slice(-39), { stems, rotation: bouquetRotation, vessel, vesselColor, vesselOpacity, vesselScale, backdrop, lightWarmth, lightDirection }];
+    past.current = [...past.current.slice(-39), { stems, rotation: bouquetRotation, vessel, vesselColor, vesselOpacity, vesselScale, backdrop, lightWarmth, lightDirection, activeLightPreset }];
     future.current = [];
     setHistoryState({ undo: past.current.length, redo: future.current.length });
-  }, [bouquetRotation, stems, vessel, vesselColor, vesselOpacity, vesselScale, backdrop, lightWarmth, lightDirection]);
+  }, [bouquetRotation, stems, vessel, vesselColor, vesselOpacity, vesselScale, backdrop, lightWarmth, lightDirection, activeLightPreset]);
   const undo = () => {
     const previous = past.current.pop();
     if (!previous) return;
-    future.current.push({ stems, rotation: bouquetRotation, vessel, vesselColor, vesselOpacity, vesselScale, backdrop, lightWarmth, lightDirection });
+    future.current.push({ stems, rotation: bouquetRotation, vessel, vesselColor, vesselOpacity, vesselScale, backdrop, lightWarmth, lightDirection, activeLightPreset });
     setStems(previous.stems);
     setBouquetRotation(previous.rotation);
     setVessel(previous.vessel);
@@ -2226,12 +2228,13 @@ export default function FlowerStudio() {
     if (previous.backdrop) setBackdrop(previous.backdrop);
     if (previous.lightWarmth !== undefined) setLightWarmth(previous.lightWarmth);
     if (previous.lightDirection !== undefined) setLightDirection(previous.lightDirection);
+    if (previous.activeLightPreset !== undefined) setActiveLightPreset(previous.activeLightPreset);
     setSelectedId(null); setHeld(null); setHistoryState({ undo: past.current.length, redo: future.current.length });
   };
   const redo = () => {
     const next = future.current.pop();
     if (!next) return;
-    past.current.push({ stems, rotation: bouquetRotation, vessel, vesselColor, vesselOpacity, vesselScale, backdrop, lightWarmth, lightDirection });
+    past.current.push({ stems, rotation: bouquetRotation, vessel, vesselColor, vesselOpacity, vesselScale, backdrop, lightWarmth, lightDirection, activeLightPreset });
     setStems(next.stems);
     setBouquetRotation(next.rotation);
     setVessel(next.vessel);
@@ -2241,6 +2244,7 @@ export default function FlowerStudio() {
     if (next.backdrop) setBackdrop(next.backdrop);
     if (next.lightWarmth !== undefined) setLightWarmth(next.lightWarmth);
     if (next.lightDirection !== undefined) setLightDirection(next.lightDirection);
+    if (next.activeLightPreset !== undefined) setActiveLightPreset(next.activeLightPreset);
     setSelectedId(null); setHeld(null); setHistoryState({ undo: past.current.length, redo: future.current.length });
   };
 
@@ -2769,6 +2773,7 @@ export default function FlowerStudio() {
     setBouquetRotation({ ...DEFAULT_BOUQUET_ROTATION });
     setBackdrop(getRandomBackdrop());
     const nextLightPreset = getRandomLightPreset();
+    setActiveLightPreset(nextLightPreset.id);
     setLightWarmth(nextLightPreset.warmth);
     setLightDirection(nextLightPreset.direction);
     setWind(0);
@@ -3358,7 +3363,7 @@ export default function FlowerStudio() {
                   </div>
                   <div className="light-presets-row" role="group" aria-label={t(language, "lighting")}>
                     {LIGHT_PRESETS.map((preset) => {
-                      const isSelected = lightWarmth === preset.warmth && lightDirection === preset.direction;
+                      const isSelected = activeLightPreset === preset.id;
                       return (
                         <button
                           key={preset.id}
@@ -3367,6 +3372,7 @@ export default function FlowerStudio() {
                           className={`light-preset-btn ${isSelected ? "active" : ""}`}
                           onClick={() => {
                             checkpoint();
+                            setActiveLightPreset(preset.id);
                             setLightWarmth(preset.warmth);
                             setLightDirection(preset.direction);
                           }}
