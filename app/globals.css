@@ -4095,3 +4095,28 @@ button:focus-visible, input:focus-visible { outline: 2px solid #7a8965; outline-
     max-height: min(370px, 46svh);
   }
 }
+
+/* Drawer content shares one scroll area, including embedded adjustments. */
+.drawer-panel-body {
+  touch-action: pan-y;
+  scrollbar-width: thin;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+.studio-drawer-panel .selection-card {
+  position: static;
+  width: 100%;
+  max-height: none;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  padding: 14px;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.studio-drawer-panel .vessel-options-scroll {
+  overflow: visible;
+  overscroll-behavior: auto;
+}

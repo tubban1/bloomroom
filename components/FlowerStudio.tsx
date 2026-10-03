@@ -2323,6 +2323,7 @@ export default function FlowerStudio() {
         setToast(t(language, "tapToAdjust"));
       } else {
         setSelectedId(next.id);
+        setActiveDrawer("flowers");
       }
       setHeld(null);
     },
@@ -3125,7 +3126,7 @@ export default function FlowerStudio() {
               held={held}
               selectedId={selectedId}
               dragId={dragId}
-              onSelect={(id) => setSelectedId(id)}
+              onSelect={(id) => { setSelectedId(id); if (id) setActiveDrawer("flowers"); }}
               onDragStart={(id) => { checkpoint(); setDragId(id); }}
               onPlace={placeFlower}
               onDrag={dragFlower}
@@ -3146,7 +3147,7 @@ export default function FlowerStudio() {
               role="tab"
               aria-selected={activeDrawer === "scene"}
               className={`studio-tab-btn ${activeDrawer === "scene" ? "active" : ""}`}
-              onClick={() => setActiveDrawer((cur) => cur === "scene" ? null : "scene")}
+              onClick={() => { setSelectedId(null); setActiveDrawer((cur) => cur === "scene" ? null : "scene"); }}
               title={t(language, "scene")}
             >
               <Sparkles size={14} />
@@ -3157,7 +3158,7 @@ export default function FlowerStudio() {
               role="tab"
               aria-selected={activeDrawer === "flowers"}
               className={`studio-tab-btn ${activeDrawer === "flowers" ? "active" : ""}`}
-              onClick={() => setActiveDrawer((cur) => cur === "flowers" ? null : "flowers")}
+              onClick={() => { setSelectedId(null); setActiveDrawer((cur) => cur === "flowers" ? null : "flowers"); }}
               title={t(language, "flowers")}
             >
               <Flower2 size={14} />
@@ -3168,7 +3169,7 @@ export default function FlowerStudio() {
               role="tab"
               aria-selected={activeDrawer === "vessels"}
               className={`studio-tab-btn ${activeDrawer === "vessels" ? "active" : ""}`}
-              onClick={() => setActiveDrawer((cur) => cur === "vessels" ? null : "vessels")}
+              onClick={() => { setSelectedId(null); setActiveDrawer((cur) => cur === "vessels" ? null : "vessels"); }}
               title={t(language, "adjustContainer")}
             >
               <Box size={14} />
@@ -3179,7 +3180,7 @@ export default function FlowerStudio() {
               role="tab"
               aria-selected={activeDrawer === "sound"}
               className={`studio-tab-btn ${activeDrawer === "sound" ? "active" : ""}`}
-              onClick={() => setActiveDrawer((cur) => cur === "sound" ? null : "sound")}
+              onClick={() => { setSelectedId(null); setActiveDrawer((cur) => cur === "sound" ? null : "sound"); }}
               title={t(language, "ambience")}
             >
               <Volume2 size={14} />
@@ -3198,7 +3199,7 @@ export default function FlowerStudio() {
               <button
                 type="button"
                 className="drawer-close-btn"
-                onClick={() => setActiveDrawer(null)}
+                onClick={() => { setSelectedId(null); setActiveDrawer(null); }}
                 aria-label={t(language, "close")}
               >
                 <X size={15} />
@@ -3334,13 +3335,31 @@ export default function FlowerStudio() {
 
               {/* 2. 花材 */}
               <div className="drawer-pane" style={{ display: activeDrawer === "flowers" ? "block" : "none" }}>
+                {selectedStem ? (
+                  <StemAdjustmentControls
+                    stem={selectedStem}
+                    stems={stems}
+                    colors={selectedColors}
+                    colorVariant={selectedColorVariant}
+                    language={language}
+                    wrapped={isWrappedVessel(vessel)}
+                    onSelectStem={setSelectedId}
+                    onStartChange={checkpoint}
+                    onHeightChange={updateSelectedHeight}
+                    onSizeChange={updateSelectedSize}
+                    onAngleChange={updateSelectedAngle}
+                    onColorChange={updateSelectedColor}
+                    onRemove={removeSelected}
+                    onDone={() => setSelectedId(null)}
+                  />
+                ) : (<>
                 {stems.length > 0 && (
                   <div className="tool-section stem-adjust-entry">
                     <button
                       type="button"
                       className="adjust-toggle"
-                      aria-expanded={!!selectedStem}
-                      onClick={() => setSelectedId(selectedStem ? null : stems[stems.length - 1].id)}
+                      aria-expanded={false}
+                      onClick={() => setSelectedId(stems[stems.length - 1].id)}
                     >
                       <span>{t(language, "adjust")}</span>
                       <span>{stems.length}</span>
@@ -3424,6 +3443,7 @@ export default function FlowerStudio() {
                     </button>
                   ))}
                 </div>
+                </>)}
               </div>
 
               {/* 3. 容器 */}
@@ -3557,23 +3577,6 @@ export default function FlowerStudio() {
             </div>
           </aside>
         </div>
-
-        {selectedStem ? <StemAdjustmentControls
-          stem={selectedStem}
-          stems={stems}
-          colors={selectedColors}
-          colorVariant={selectedColorVariant}
-          language={language}
-          wrapped={isWrappedVessel(vessel)}
-          onSelectStem={setSelectedId}
-          onStartChange={checkpoint}
-          onHeightChange={updateSelectedHeight}
-          onSizeChange={updateSelectedSize}
-          onAngleChange={updateSelectedAngle}
-          onColorChange={updateSelectedColor}
-          onRemove={removeSelected}
-          onDone={() => setSelectedId(null)}
-        /> : null}
 
         {held ? (
           <div className="hint" role="status">
