@@ -57,21 +57,138 @@ button {
     linear-gradient(145deg, #f2eee4 0%, #e7e3d8 100%);
 }
 
-.loading-screen p {
-  color: var(--muted);
-  font-size: 13px;
-  letter-spacing: .14em;
-  text-transform: uppercase;
+/* ==========================================================================
+   BloomLoader & MiniSpinner Design System
+   ========================================================================== */
+.bloom-loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  user-select: none;
 }
 
-.loading-mark {
-  width: 54px;
-  height: 54px;
-  border: 1px solid var(--ink);
-  display: grid;
-  place-items: center;
+.bloom-loader-container.size-sm .bloom-flower-svg { width: 22px; height: 22px; }
+.bloom-loader-container.size-md .bloom-flower-svg { width: 44px; height: 44px; }
+.bloom-loader-container.size-lg .bloom-flower-svg { width: 64px; height: 64px; }
+
+.bloom-flower-svg {
+  display: block;
+  overflow: visible;
+  color: #475443;
+}
+
+.bloom-stem {
+  stroke-dasharray: 38;
+  stroke-dashoffset: 38;
+  animation: bloomStemGrow 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.bloom-leaf-l {
+  transform-origin: 24px 33px;
+  animation: bloomLeafL 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.bloom-leaf-r {
+  transform-origin: 24px 27px;
+  animation: bloomLeafR 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.bloom-petal-center {
+  transform-origin: 24px 15px;
+  animation: bloomPetalCenter 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.bloom-petal-left {
+  transform-origin: 24px 15px;
+  animation: bloomPetalLeft 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.bloom-petal-right {
+  transform-origin: 24px 15px;
+  animation: bloomPetalRight 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.bloom-core {
+  animation: bloomCoreGlow 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes bloomStemGrow {
+  0% { stroke-dashoffset: 38; opacity: 0.2; }
+  35%, 85% { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 0.2; }
+}
+
+@keyframes bloomLeafL {
+  0%, 15% { transform: scale(0) rotate(15deg); opacity: 0; }
+  45%, 85% { transform: scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: scale(0.9) rotate(5deg); opacity: 0.25; }
+}
+
+@keyframes bloomLeafR {
+  0%, 25% { transform: scale(0) rotate(-15deg); opacity: 0; }
+  55%, 85% { transform: scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: scale(0.9) rotate(-5deg); opacity: 0.25; }
+}
+
+@keyframes bloomPetalCenter {
+  0%, 25% { transform: scale(0.3); opacity: 0; }
+  55%, 85% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.85); opacity: 0.25; }
+}
+
+@keyframes bloomPetalLeft {
+  0%, 30% { transform: scale(0) rotate(20deg); opacity: 0; }
+  60%, 85% { transform: scale(1) rotate(0deg); opacity: 0.95; }
+  100% { transform: scale(0.85) rotate(10deg); opacity: 0.25; }
+}
+
+@keyframes bloomPetalRight {
+  0%, 30% { transform: scale(0) rotate(-20deg); opacity: 0; }
+  60%, 85% { transform: scale(1) rotate(0deg); opacity: 0.95; }
+  100% { transform: scale(0.85) rotate(-10deg); opacity: 0.25; }
+}
+
+@keyframes bloomCoreGlow {
+  0%, 40% { transform: scale(0); opacity: 0; }
+  65%, 85% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.5); opacity: 0; }
+}
+
+.bloom-loader-label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #24251f;
+  letter-spacing: 0.05em;
+}
+
+.size-lg .bloom-loader-label {
+  font-size: 18px;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 30px;
+  letter-spacing: 0.08em;
+}
+
+.bloom-loader-sublabel {
+  margin: -6px 0 0;
+  font-size: 11px;
+  color: #8c877b;
+  letter-spacing: 0.06em;
+}
+
+/* Micro Spinner for buttons & inline elements */
+.bloom-spinner-ring,
+.spinner {
+  animation: bloomSpin 0.75s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+@keyframes bloomSpin {
+  to { transform: rotate(360deg); }
 }
 
 .studio {

@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Play, Pause, Volume2, RotateCcw, AlertCircle, Loader2 } from "lucide-react";
+import { Play, Pause, Volume2, RotateCcw, AlertCircle } from "lucide-react";
 import { t, type Language } from "@/lib/translations";
+import { MiniSpinner } from "@/components/BloomLoader";
 import styles from "@/app/g/[id]/page.module.css";
 
 type Props = {
@@ -172,7 +173,7 @@ export default function PostcardAudioPlayer({
           aria-label={isPlaying ? t(language, "pauseVoice") : t(language, "listenToVoice")}
         >
           {loading ? (
-            <Loader2 size={16} className={styles.spinner} />
+            <MiniSpinner size={16} />
           ) : isPlaying ? (
             <Pause size={16} />
           ) : (

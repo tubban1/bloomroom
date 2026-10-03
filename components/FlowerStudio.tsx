@@ -31,6 +31,7 @@ import GardenModal from "./GardenModal";
 import GalleryModal from "./GalleryModal";
 import VoiceRecorder from "./VoiceRecorder";
 import AiReadingCard from "./AiReadingCard";
+import { MiniSpinner } from "./BloomLoader";
 import { computeBouquetFingerprint, type AiReading } from "@/lib/ai-reading";
 import { createCreationSync } from "@/lib/creation-sync";
 import type { SafeUser } from "@/lib/auth";
@@ -2935,7 +2936,7 @@ export default function FlowerStudio() {
               onClick={handleSaveDraft}
               disabled={savingDraft || stems.length === 0}
             >
-              <Bookmark size={14} />
+              {savingDraft ? <MiniSpinner size={14} /> : <Bookmark size={14} />}
               <span>{savingDraft ? t(language, "savingDraft") : t(language, "saveDraft")}</span>
             </button>
             <button
@@ -3526,7 +3527,11 @@ export default function FlowerStudio() {
                 ) : null}
               </div>
 
-              {savingCreation && <p className="creation-save-status" role="status">{t(language, "savingToGallery")}</p>}
+              {savingCreation && (
+                <p className="creation-save-status" role="status">
+                  <MiniSpinner size={12} /> {t(language, "savingToGallery")}
+                </p>
+              )}
               {creationError && <div className="share-error" role="alert">
                 <span>{creationError}</span>{" "}
                 <button type="button" disabled={savingCreation} onClick={() => { void persistFinishedCreation().catch(() => {}); }}>{t(language, "retrySave")}</button>
@@ -3536,7 +3541,15 @@ export default function FlowerStudio() {
                   <Download size={13} /> {mobileSave ? t(language, "saveToPhotos") : t(language, "download")}
                 </button>
                 <button type="button" onClick={createShareLink} disabled={publishing || savingCreation || !finishImage}>
-                  {publishing ? t(language, "creating") : shareUrl ? t(language, "createAnother") : t(language, "createLink")}
+                  {publishing ? (
+                    <>
+                      <MiniSpinner size={13} /> {t(language, "creating")}
+                    </>
+                  ) : shareUrl ? (
+                    t(language, "createAnother")
+                  ) : (
+                    t(language, "createLink")
+                  )}
                 </button>
                 <button
                   type="button"

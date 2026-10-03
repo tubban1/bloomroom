@@ -6,13 +6,13 @@ import {
   Heart,
   Sparkles,
   RotateCcw,
-  Loader2,
   Clock,
   Compass,
   Eye,
   Check,
   Flame,
 } from "lucide-react";
+import { BloomLoader, MiniSpinner } from "@/components/BloomLoader";
 import { t, type Language } from "@/lib/translations";
 import type { SafeUser } from "@/lib/auth";
 import type { CreationCard, CreationDetail, GallerySort } from "@/lib/creations";
@@ -253,8 +253,7 @@ export default function GalleryModal({
         <div className="gallery-body">
           {loading && (
             <div className="gallery-loading-state">
-              <Loader2 size={24} className="spinner" />
-              <span>{t(language, "loadingMore")}</span>
+              <BloomLoader size="md" label={t(language, "loadingMore")} />
             </div>
           )}
 
@@ -316,7 +315,7 @@ export default function GalleryModal({
                   >
                     {loadingMore ? (
                       <>
-                        <Loader2 size={14} className="spinner" />
+                        <MiniSpinner size={14} />
                         <span>{t(language, "loadingMore")}</span>
                       </>
                     ) : (

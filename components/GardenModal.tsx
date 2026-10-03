@@ -5,6 +5,7 @@ import { X, Sparkles, Send, Trash2, Edit3, ArrowRight, ExternalLink, Flower2, He
 import type { DraftSummary, SentPostcardSummary } from "@/lib/drafts";
 import type { SafeUser } from "@/lib/auth";
 import { t, type Language } from "@/lib/translations";
+import { BloomLoader } from "@/components/BloomLoader";
 
 type Props = {
   isOpen: boolean;
@@ -261,8 +262,8 @@ export default function GardenModal({
         <div className="garden-content">
           {loadError && <p role="alert">{t(language, "loadBouquetError")}</p>}
           {loading ? (
-            <div className="garden-empty-state">
-              <p>{t(language, "loading")}</p>
+            <div className="garden-empty-state" role="status">
+              <BloomLoader size="md" label={t(language, "loading")} />
             </div>
           ) : tab === "drafts" ? (
             drafts.length === 0 ? (

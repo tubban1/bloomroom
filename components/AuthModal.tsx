@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { X, Lock, Eye, EyeOff, User as UserIcon, AlertCircle } from "lucide-react";
 import type { SafeUser } from "@/lib/auth";
 import { t, type Language } from "@/lib/translations";
+import { MiniSpinner } from "@/components/BloomLoader";
 
 type Props = {
   isOpen: boolean;
@@ -243,7 +244,7 @@ export default function AuthModal({
           {mode === "signup" && <PasswordField id="auth-confirm-password" label={t(language, "confirmPasswordLabel")} value={confirmPassword} onChange={setConfirmPassword} language={language} mode={mode} />}
 
           <button className="auth-submit-button" type="submit" disabled={loading}>
-            {loading ? "..." : mode === "login" ? t(language, "login") : t(language, "signup")}
+            {loading ? <MiniSpinner size={16} /> : mode === "login" ? t(language, "login") : t(language, "signup")}
           </button>
 
           <div className="auth-switch">

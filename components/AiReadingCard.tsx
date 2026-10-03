@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Sparkles, Copy, Check, Download, RotateCcw, AlertCircle, Loader2 } from "lucide-react";
+import { Sparkles, Copy, Check, Download, RotateCcw, AlertCircle } from "lucide-react";
 import { t, type Language } from "@/lib/translations";
+import { BloomLoader, MiniSpinner } from "@/components/BloomLoader";
 import { PROMPT_VERSION, getReadingDisplayContent, type AiReading, type BouquetDataInput } from "@/lib/ai-reading";
 
 type Props = {
@@ -385,7 +386,7 @@ export default function AiReadingCard({
 
       {generating && (
         <div className="ai-reading-loading" role="status">
-          <Loader2 size={18} className="spinner" />
+          <BloomLoader size="sm" />
           <span>{t(language, "generatingReading")}</span>
         </div>
       )}
@@ -454,7 +455,7 @@ export default function AiReadingCard({
               onClick={handleSaveCardImage}
               disabled={savingCard}
             >
-              {savingCard ? <Loader2 size={13} className="spinner" /> : <Download size={13} />}
+              {savingCard ? <MiniSpinner size={13} /> : <Download size={13} />}
               <span>{savingCard ? t(language, "savingReadingCard") : t(language, "saveReadingCard")}</span>
             </button>
 
