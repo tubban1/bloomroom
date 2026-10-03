@@ -1764,7 +1764,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid #7a8965; outline-
 /* TOPBAR ACTIONS: Save Draft & User Account                     */
 /* ------------------------------------------------------------- */
 .save-draft-button,
-.login-button,
 .garden-button {
   display: inline-flex;
   align-items: center;
@@ -1784,7 +1783,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid #7a8965; outline-
 }
 
 .save-draft-button:hover:not(:disabled),
-.login-button:hover,
 .garden-button:hover {
   background: rgba(255, 255, 255, 0.85);
   border-color: rgba(25, 25, 20, 0.35);
@@ -1846,13 +1844,11 @@ button:focus-visible, input:focus-visible { outline: 2px solid #7a8965; outline-
 @media (max-width: 760px) {
   .save-draft-button span,
   .garden-button span,
-  .login-button span,
   .user-badge {
     display: none;
   }
   .save-draft-button,
-  .garden-button,
-  .login-button {
+  .garden-button {
     padding: 0 10px;
   }
 }

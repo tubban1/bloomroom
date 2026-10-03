@@ -2780,15 +2780,16 @@ export default function FlowerStudio() {
             </div>
           ) : (
             <button
-              className="login-entry-button"
+              className="icon-button login-button"
               type="button"
+              aria-label={t(language, "login")}
+              title={t(language, "login")}
               onClick={() => {
                 setAuthPromptReason("");
                 setAuthModalOpen(true);
               }}
             >
-              <UserIcon size={14} />
-              <span>{t(language, "login")}</span>
+              <UserIcon size={15} strokeWidth={1.5} />
             </button>
           )}
         </div>
